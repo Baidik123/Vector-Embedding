@@ -1,0 +1,84 @@
+<div class="compare-overlay">
+  <div class="compare-container">
+    <div class="toolbar">
+      <div class="zoom-controls">
+        <button (click)="zoomOut()" title="Zoom Out">−</button>
+        <span class="zoom-text">{{ (zoomLevel() * 100).toFixed(0) }}%</span>
+        <button (click)="zoomIn()" title="Zoom In">+</button>
+        <button (click)="resetZoom()" title="Reset Zoom">Reset</button>
+      </div>
+      <button class="close-button" (click)="onClose()">&times;</button>
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Comparing images...</p>
+      </div>
+    } @else if (errorMessage()) {
+      <div class="error-state">
+        <p>{{ errorMessage() }}</p>
+        <button (click)="onClose()">Close</button>
+      </div>
+    } @else {
+      <div class="compare-content">
+        <div class="pdf-viewer-scroll">
+          <div class="pdf-centering-layer">
+            <div class="pdf-viewer-wrapper" [style.transform]="'scale(' + zoomLevel() + ')'">
+              <img
+                *ngIf="firstPngUrl"
+                [src]="firstPngUrl"
+                class="pdf-iframe first"
+                alt="First PNG"
+              />
+              <img
+                *ngIf="secondPngUrl"
+                [src]="secondPngUrl"
+                class="pdf-iframe second"
+                [style.clip-path]="'inset(0 0 0 ' + sliderValue() + '%)'"
+                alt="Second PNG"
+              />
+
+              <input
+                type="range"
+                min="0"
+                max="100"
+                [value]="sliderValue()"
+                (input)="onSliderChange($event)"
+                class="slider"
+              />
+            </div>
+          </div>
+        </div>
+
+        @if (comparisonResult()) {
+          <div class="results-panel" [style.backgroundColor]="'rgba(0,0,0,0.05)'">
+            <div class="result-card" [style.borderColor]="getBandColor()">
+              <div class="result-header" [style.backgroundColor]="getBandColor()">
+                <h3>{{ comparisonResult()!.band }}</h3>
+              </div>
+
+              <div class="result-body">
+                <div class="score-row">
+                  <span class="score-label">Similarity Score</span>
+                  <span class="score-value" [style.color]="getBandColor()">
+                    {{ getSimilarityPercentage() }}%
+                  </span>
+                </div>
+
+                <div class="metric-row">
+                  <span class="metric-label">Hamming Distance</span>
+                  <span class="metric-value">{{ comparisonResult()!.hamming_distance }} / 256</span>
+                </div>
+
+                <div class="description">
+                  {{ comparisonResult()!.band_description }}
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

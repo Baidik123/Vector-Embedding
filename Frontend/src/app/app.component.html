@@ -1,0 +1,129 @@
+<div class="page-shell">
+  <div class="page-card">
+    <header class="hero">
+     
+      <h1>
+        Upload your PNGs for comparison.
+      </h1>
+    </header>
+
+    <section class="upload-grid">
+      <!-- LEFT: FIRST PNG -->
+      <div class="upload-column">
+        <input
+          #firstInput
+          type="file"
+          accept="image/png,.png"
+          hidden
+          (change)="onFileSelected($event, 'first')"
+        />
+
+        <div
+          class="upload-zone"
+          [class.drag-over]="firstDragOver()"
+          [class.has-preview]="!!firstPreview()"
+          (click)="!firstPreview() && triggerFilePicker('first')"
+          (dragover)="onDragOver($event, 'first')"
+          (dragleave)="onDragLeave($event, 'first')"
+          (drop)="onDrop($event, 'first')"
+        >
+          @if (firstPreview()) {
+            <div class="preview-container">
+              <img [src]="firstPreview()" alt="First PNG" />
+              <button class="btn-clear" (click)="clearFile('first'); $event.stopPropagation()">
+                &times;
+              </button>
+            </div>
+          } @else {
+            <div class="upload-inner">
+              <div class="upload-icon"></div>
+              <h3>Upload or Drag & Drop your file</h3>
+              <p>PNG only</p>
+
+              @if (firstError()) {
+                <div class="file-pill error">
+                  {{ firstError() }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (firstFile()) {
+          <div class="file-info">
+            <strong>{{ firstFile()?.name }}</strong>
+            <span>{{ formatSize(firstFile()!.size) }}</span>
+          </div>
+        }
+
+        <h2 class="upload-heading">First PNG</h2>
+      </div>
+
+      <!-- RIGHT: SECOND PNG -->
+      <div class="upload-column">
+        <input
+          #secondInput
+          type="file"
+          accept="image/png,.png"
+          hidden
+          (change)="onFileSelected($event, 'second')"
+        />
+
+        <div
+          class="upload-zone"
+          [class.drag-over]="secondDragOver()"
+          [class.has-preview]="!!secondPreview()"
+          (click)="!secondPreview() && triggerFilePicker('second')"
+          (dragover)="onDragOver($event, 'second')"
+          (dragleave)="onDragLeave($event, 'second')"
+          (drop)="onDrop($event, 'second')"
+        >
+          @if (secondPreview()) {
+            <div class="preview-container">
+              <img [src]="secondPreview()" alt="Second PNG" />
+              <button class="btn-clear" (click)="clearFile('second'); $event.stopPropagation()">
+                &times;
+              </button>
+            </div>
+          } @else {
+            <div class="upload-inner">
+              <div class="upload-icon"></div>
+              <h3>Upload or Drag & Drop your file</h3>
+              <p>PNG only</p>
+
+              @if (secondError()) {
+                <div class="file-pill error">
+                  {{ secondError() }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (secondFile()) {
+          <div class="file-info">
+            <strong>{{ secondFile()?.name }}</strong>
+            <span>{{ formatSize(secondFile()!.size) }}</span>
+          </div>
+        }
+
+        <h2 class="upload-heading">Second PNG</h2>
+      </div>
+    </section>
+    <div class="actions">
+      <button class="btn-compare" (click)="onCompare()" [disabled]="!firstFile() || !secondFile()">
+        Compare PNGs
+      </button>
+    </div>
+  </div>
+</div>
+
+@if (showCompare()) {
+  <app-pdf-compare
+    [firstPngUrl]="firstPreview()"
+    [secondPngUrl]="secondPreview()"
+    [firstFile]="firstFile()"
+    [secondFile]="secondFile()"
+    (closeCompare)="onCloseCompare()"
+  ></app-pdf-compare>
+}
