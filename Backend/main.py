@@ -5,9 +5,8 @@ import cv2
 import numpy as np
 import imagehash
 from io import BytesIO
-import json
 
-app = FastAPI(title="AEC Image Similarity Detection", version="1.0.0")
+app = FastAPI(title="AEC Image Similarity Detection", version="1.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,114 +17,133 @@ app.add_middleware(
 )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# CONSTANTS — SINGLE SOURCE OF TRUTH
+# ─────────────────────────────────────────────────────────────────────────────
+
+HASH_SIZE = 16                      # 16×16 dHash grid
+MAX_BITS  = HASH_SIZE * HASH_SIZE   # 256 bits
+
+# Classification based on similarity score (0-1):
+#   score = 1 - (hamming / 256)
+#
+# Band                Score ≥   Hamming ≤   Interpretation
+# ────────────────────────────────────────────────────────────
+# Exact Duplicate      0.973        7         97.3%+ similar
+# Likely Duplicate     0.902       25         90.2%+ similar
+# Similar – Same       0.781       56         78.1%+ similar
+# Similar – Related    0.70        77         70-78% similar
+# Different           < 0.70       > 77       < 70% similar
+
+BANDS = [
+    (7,   "Exact Duplicate",        "These images are virtually identical."),
+    (25,  "Likely Duplicate",        "Very similar with only minor differences."),
+    (56,  "Similar – Same Family",   "Significant structural similarity — same design family."),
+    (77,  "Similar – Related",       "Moderately similar — related drawing type."),
+    (256, "Different",               "Substantially different drawings."),
+]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# STAGE 0 — PREPROCESSING
+# ─────────────────────────────────────────────────────────────────────────────
+
 def preprocess_image(image: Image.Image) -> Image.Image:
     """
-    Preprocessing Stage 0:
     1. Convert to grayscale
-    2. Binarize using Otsu threshold
+    2. Otsu binarization
     3. Invert to black-on-white
-    4. Strip title block: mask out bottom 15% height and right 20% width
-    5. Apply light Gaussian blur
+    4. Fixed-region title block masking (bottom 15% height, right 20% width)
+    5. Light Gaussian blur to reduce rendering artifacts
     """
     img_array = np.array(image)
 
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
     inverted = cv2.bitwise_not(binary)
 
-    height, width = inverted.shape
-    mask = np.ones((height, width), dtype=np.uint8) * 255
-
-    mask[int(0.85 * height):, :] = 0
-    mask[:, int(0.80 * width):] = 0
-
+    h, w = inverted.shape
+    mask = np.ones((h, w), dtype=np.uint8) * 255
+    mask[int(0.85 * h):, :] = 0    # bottom 15%
+    mask[:, int(0.80 * w):] = 0    # right 20%
     masked = cv2.bitwise_and(inverted, inverted, mask=mask)
 
     blurred = cv2.GaussianBlur(masked, (3, 3), 0)
-
     return Image.fromarray(blurred)
 
 
-def compute_dhash(image: Image.Image, hash_size: int = 16) -> str:
+# ─────────────────────────────────────────────────────────────────────────────
+# STAGE 1 — dHASH + CLASSIFICATION
+# ─────────────────────────────────────────────────────────────────────────────
+
+def compute_dhash(image: Image.Image) -> imagehash.ImageHash:
     """
-    Compute dHash (difference hash) at specified size.
-    Default hash_size=16 gives 128-bit hash (16x16 grid).
+    Compute dHash at HASH_SIZE.
+    Returns ImageHash so subtraction (−) gives Hamming distance directly.
     """
-    return str(imagehash.dhash(image, hash_size=hash_size))
+    return imagehash.dhash(image, hash_size=HASH_SIZE)
 
 
-def hamming_distance(hash1: str, hash2: str) -> int:
-    """
-    Compute Hamming distance between two hex hash strings.
-    """
-    return bin(int(hash1, 16) ^ int(hash2, 16)).count('1')
+def score_from_hamming(hamming_dist: int) -> float:
+    """Single formula: similarity = 1 − (hamming / MAX_BITS)."""
+    return 1.0 - (hamming_dist / MAX_BITS)
 
 
-def classify_similarity(hamming_dist: int, max_bits: int = 256) -> tuple[str, str]:
+def classify(hamming_dist: int) -> tuple[str, str]:
     """
-    Classify similarity based on Hamming distance.
-    Thresholds:
-    - Hamming ≤ 6 → EXACT DUPLICATE
-    - Hamming 7–18 → LIKELY DUPLICATE
-    - Hamming 19–35 → SIMILAR SAME FAMILY
-    - Hamming 36–55 → SIMILAR RELATED
-    - Hamming > 55 → DIFFERENT
+    Classify using Hamming thresholds (single source of truth).
+    Label and score come from the same hamming_dist → always consistent.
     """
-    if hamming_dist <= 6:
-        return "Exact Duplicate", "These images are virtually identical."
-    elif hamming_dist <= 18:
-        return "Likely Duplicate", "These images are very similar with minor differences."
-    elif hamming_dist <= 35:
-        return "Similar – Same Family", "These images share significant structural similarity."
-    elif hamming_dist <= 55:
-        return "Similar – Related", "These images are moderately similar."
-    else:
-        return "Different", "These images are substantially different."
+    for threshold, label, description in BANDS:
+        if hamming_dist <= threshold:
+            return label, description
+    # Fallback
+    return BANDS[-1][1], BANDS[-1][2]
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENDPOINTS
+# ─────────────────────────────────────────────────────────────────────────────
 
 @app.post("/compare")
-async def compare_images(first: UploadFile = File(...), second: UploadFile = File(...)):
-    """
-    Compare two PNG images and return similarity metrics.
-    """
+async def compare_images(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """Compare two PNG images (Stage 0 + Stage 1)."""
+
+    # Load images
     try:
-        first_data = await first.read()
-        second_data = await second.read()
+        first_image = Image.open(BytesIO(await first.read())).convert("RGB")
+        second_image = Image.open(BytesIO(await second.read())).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not open images: {e}")
 
-        first_image = Image.open(BytesIO(first_data)).convert("RGB")
-        second_image = Image.open(BytesIO(second_data)).convert("RGB")
+    # Process and compare
+    try:
+        hash1 = compute_dhash(preprocess_image(first_image))
+        hash2 = compute_dhash(preprocess_image(second_image))
 
-        first_processed = preprocess_image(first_image)
-        second_processed = preprocess_image(second_image)
-
-        hash1 = compute_dhash(first_processed, hash_size=16)
-        hash2 = compute_dhash(second_processed, hash_size=16)
-
-        hamming_dist = hamming_distance(hash1, hash2)
-        max_bits = 256
-        dhash_similarity = 1 - (hamming_dist / max_bits)
-
-        hybrid_score = dhash_similarity
-
-        band, band_description = classify_similarity(hamming_dist, max_bits)
+        hamming_dist = hash1 - hash2          # imagehash built-in Hamming
+        score = score_from_hamming(hamming_dist)
+        band, description = classify(hamming_dist)
 
         return {
             "hamming_distance": hamming_dist,
-            "dhash_similarity": round(dhash_similarity, 4),
-            "hybrid_score": round(hybrid_score, 4),
+            "dhash_similarity": round(score, 4),
+            "hybrid_score": round(score, 4),
             "band": band,
-            "band_description": band_description,
+            "band_description": description,
         }
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error processing images: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "ok"}
+    return {"status": "ok", "version": "1.1.0"}
 
 
 if __name__ == "__main__":
