@@ -10,75 +10,101 @@
       <button class="close-button" (click)="onClose()">&times;</button>
     </div>
 
-    @if (isLoading()) {
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Comparing images...</p>
-      </div>
-    } @else if (errorMessage()) {
-      <div class="error-state">
-        <p>{{ errorMessage() }}</p>
-        <button (click)="onClose()">Close</button>
-      </div>
-    } @else {
-      <div class="compare-content">
-        <div class="pdf-viewer-scroll">
-          <div class="pdf-centering-layer">
-            <div class="pdf-viewer-wrapper" [style.transform]="'scale(' + zoomLevel() + ')'">
-              <img
-                *ngIf="firstPngUrl"
-                [src]="firstPngUrl"
-                class="pdf-iframe first"
-                alt="First PNG"
-              />
-              <img
-                *ngIf="secondPngUrl"
-                [src]="secondPngUrl"
-                class="pdf-iframe second"
-                [style.clip-path]="'inset(0 0 0 ' + sliderValue() + '%)'"
-                alt="Second PNG"
-              />
-
-              <input
-                type="range"
-                min="0"
-                max="100"
-                [value]="sliderValue()"
-                (input)="onSliderChange($event)"
-                class="slider"
-              />
-            </div>
+    <div class="compare-content">
+      <div class="pdf-viewer-scroll">
+        <div class="pdf-centering-layer">
+          <div class="pdf-viewer-wrapper" [style.transform]="'scale(' + zoomLevel() + ')'">
+            <img
+              *ngIf="firstPngUrl"
+              [src]="firstPngUrl"
+              class="pdf-iframe first"
+              alt="First PNG"
+            />
+            <img
+              *ngIf="secondPngUrl"
+              [src]="secondPngUrl"
+              class="pdf-iframe second"
+              [style.clip-path]="'inset(0 0 0 ' + sliderValue() + '%)'"
+              alt="Second PNG"
+            />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              [value]="sliderValue()"
+              (input)="onSliderChange($event)"
+              class="slider"
+            />
           </div>
         </div>
-
-        @if (comparisonResult()) {
-          <div class="results-panel" [style.backgroundColor]="'rgba(0,0,0,0.05)'">
-            <div class="result-card" [style.borderColor]="getBandColor()">
-              <div class="result-header" [style.backgroundColor]="getBandColor()">
-                <h3>{{ comparisonResult()!.band }}</h3>
-              </div>
-
-              <div class="result-body">
-                <div class="score-row">
-                  <span class="score-label">Similarity Score</span>
-                  <span class="score-value" [style.color]="getBandColor()">
-                    {{ getSimilarityPercentage() }}<span class="percent-sign">%</span>
-                  </span>
-                </div>
-
-                <div class="metric-row">
-                  <span class="metric-label">Hamming Distance</span>
-                  <span class="metric-value">{{ comparisonResult()!.hamming_distance }} / 256</span>
-                </div>
-
-                <div class="description">
-                  {{ comparisonResult()!.band_description }}
-                </div>
-              </div>
-            </div>
-          </div>
-        }
       </div>
-    }
+
+      @if (algorithmStatuses().length > 0) {
+        <div class="results-panel">
+          @if (isAnyLoading()) {
+            <div class="results-loading-bar">
+              <div class="spinner-small"></div>
+              <span>Running comparison...</span>
+            </div>
+          }
+          <div class="results-grid" [class.multi]="algorithmStatuses().length > 1">
+            @for (status of algorithmStatuses(); track status.id) {
+              <div class="result-card" [style.borderLeftColor]="getBandColor(status.band)">
+                <div class="result-header" [style.backgroundColor]="getBandColor(status.band)">
+                  <h3>{{ status.label }}</h3>
+                </div>
+
+                @if (status.loading) {
+                  <div class="card-loading">
+                    <div class="spinner-small"></div>
+                    <span>Analyzing...</span>
+                  </div>
+                } @else if (status.error) {
+                  <div class="card-error">{{ status.error }}</div>
+                } @else {
+                  <div class="result-body">
+                    <div class="score-row">
+                      <span class="score-label">Similarity Score</span>
+                      <span class="score-value" [style.color]="getBandColor(status.band)">
+                        {{ (status.similarity! * 100).toFixed(1) }}<span class="percent-sign">%</span>
+                      </span>
+                    </div>
+
+                    <div class="band-row">
+                      <span class="band-chip" [style.backgroundColor]="getBandColor(status.band)">
+                        {{ status.band }}
+                      </span>
+                    </div>
+
+                    @if (status.hammingDistance !== undefined) {
+                      <div class="metric-row">
+                        <span class="metric-label">Hamming Distance</span>
+                        <span class="metric-value">{{ status.hammingDistance }} / 256</span>
+                      </div>
+                    }
+
+                    @if (status.dhashSimilarity !== undefined) {
+                      <div class="metric-row component-row">
+                        <span class="metric-label">dHash component <span class="weight-tag">×0.4</span></span>
+                        <span class="metric-value">{{ (status.dhashSimilarity * 100).toFixed(1) }}%</span>
+                      </div>
+                    }
+
+                    @if (status.dinoSimilarity !== undefined) {
+                      <div class="metric-row component-row">
+                        <span class="metric-label">DINO component <span class="weight-tag">×0.6</span></span>
+                        <span class="metric-value">{{ (status.dinoSimilarity * 100).toFixed(1) }}%</span>
+                      </div>
+                    }
+
+                    <div class="description">{{ status.bandDescription }}</div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
   </div>
 </div>

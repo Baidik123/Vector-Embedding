@@ -1,7 +1,6 @@
 <div class="page-shell">
   <div class="page-card">
     <header class="hero">
-     
       <h1>
         Upload your PNGs for comparison.
       </h1>
@@ -110,8 +109,59 @@
         <h2 class="upload-heading">Second PNG</h2>
       </div>
     </section>
+
+    <!-- ALGORITHM SELECTION -->
+    <div class="algorithm-section">
+      <p class="algorithm-label">Select comparison methods</p>
+      <div class="algorithm-options">
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('dhash')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('dhash')"
+            (change)="toggleAlgorithm('dhash')"
+          />
+          <span class="algo-name">dHash</span>
+          <span class="algo-desc">Fast pixel fingerprint</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('dino_small')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('dino_small')"
+            (change)="toggleAlgorithm('dino_small')"
+          />
+          <span class="algo-name">DINO V2 <span class="algo-badge">small</span></span>
+          <span class="algo-desc">AI embedding · 384-dim · ~86 MB</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('dino_large')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('dino_large')"
+            (change)="toggleAlgorithm('dino_large')"
+          />
+          <span class="algo-name">DINO V2 <span class="algo-badge algo-badge--large">large</span></span>
+          <span class="algo-desc">AI embedding · 1024-dim · ~300 MB</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('hybrid')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('hybrid')"
+            (change)="toggleAlgorithm('hybrid')"
+          />
+          <span class="algo-name">Hybrid</span>
+          <span class="algo-desc">dHash ×0.4 + DINO ×0.6</span>
+        </label>
+      </div>
+    </div>
+
     <div class="actions">
-      <button class="btn-compare" (click)="onCompare()" [disabled]="!firstFile() || !secondFile()">
+      <button
+        class="btn-compare"
+        (click)="onCompare()"
+        [disabled]="!firstFile() || !secondFile() || selectedAlgorithms().length === 0"
+      >
         Compare PNGs
       </button>
     </div>
@@ -124,6 +174,7 @@
     [secondPngUrl]="secondPreview()"
     [firstFile]="firstFile()"
     [secondFile]="secondFile()"
+    [selectedAlgorithms]="selectedAlgorithms()"
     (closeCompare)="onCloseCompare()"
   ></app-pdf-compare>
 }

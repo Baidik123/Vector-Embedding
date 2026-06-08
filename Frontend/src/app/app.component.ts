@@ -1,6 +1,5 @@
-import { Component, ElementRef, ViewChild, signal, OnDestroy, inject } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { PdfCompare } from './pdf-compare/pdf-compare';
+import { Component, ElementRef, ViewChild, signal, OnDestroy } from '@angular/core';
+import { PdfCompare, AlgorithmId } from './pdf-compare/pdf-compare';
 
 type UploadSide = 'first' | 'second';
 
@@ -12,7 +11,6 @@ type UploadSide = 'first' | 'second';
   styleUrl: './app.component.css',
 })
 export class AppComponent implements OnDestroy {
-  private sanitizer = inject(DomSanitizer);
 
   @ViewChild('firstInput') firstInput!: ElementRef<HTMLInputElement>;
   @ViewChild('secondInput') secondInput!: ElementRef<HTMLInputElement>;
@@ -20,8 +18,8 @@ export class AppComponent implements OnDestroy {
   firstFile = signal<File | null>(null);
   secondFile = signal<File | null>(null);
 
-  firstPreview = signal<SafeResourceUrl | null>(null);
-  secondPreview = signal<SafeResourceUrl | null>(null);
+  firstPreview = signal<string | null>(null);
+  secondPreview = signal<string | null>(null);
 
   firstError = signal('');
   secondError = signal('');
@@ -31,16 +29,42 @@ export class AppComponent implements OnDestroy {
 
   showCompare = signal(false);
 
+  selectedAlgorithms = signal<AlgorithmId[]>(['dhash']);
+
+  // Raw object URLs so they can be revoked and memory freed
+  private firstObjectUrl: string | null = null;
+  private secondObjectUrl: string | null = null;
+
   ngOnDestroy(): void {
-    this.cleanupPreviews();
+    this.revokeUrl('first');
+    this.revokeUrl('second');
   }
 
-  private cleanupPreviews(): void {
-    this.firstPreview.set(null);
-    this.secondPreview.set(null);
+  private revokeUrl(side: UploadSide): void {
+    if (side === 'first' && this.firstObjectUrl) {
+      URL.revokeObjectURL(this.firstObjectUrl);
+      this.firstObjectUrl = null;
+    } else if (side === 'second' && this.secondObjectUrl) {
+      URL.revokeObjectURL(this.secondObjectUrl);
+      this.secondObjectUrl = null;
+    }
+  }
+
+  toggleAlgorithm(id: AlgorithmId): void {
+    const current = this.selectedAlgorithms();
+    if (current.includes(id)) {
+      this.selectedAlgorithms.set(current.filter((a) => a !== id));
+    } else {
+      this.selectedAlgorithms.set([...current, id]);
+    }
+  }
+
+  isAlgorithmSelected(id: AlgorithmId): boolean {
+    return this.selectedAlgorithms().includes(id);
   }
 
   clearFile(side: UploadSide): void {
+    this.revokeUrl(side);
     if (side === 'first') {
       this.firstFile.set(null);
       this.firstPreview.set(null);
@@ -63,11 +87,8 @@ export class AppComponent implements OnDestroy {
   onFileSelected(event: Event, side: UploadSide): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
-
     if (!file) return;
-
     this.assignFile(file, side);
-
     input.value = '';
   }
 
@@ -91,16 +112,13 @@ export class AppComponent implements OnDestroy {
 
   onDrop(event: DragEvent, side: UploadSide): void {
     event.preventDefault();
-
     if (side === 'first') {
       this.firstDragOver.set(false);
     } else {
       this.secondDragOver.set(false);
     }
-
     const file = event.dataTransfer?.files?.[0] ?? null;
     if (!file) return;
-
     this.assignFile(file, side);
   }
 
@@ -109,30 +127,32 @@ export class AppComponent implements OnDestroy {
       file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
 
     if (!isPng) {
-      const message = 'Only PNG files are allowed.';
       if (side === 'first') {
-        this.firstError.set(message);
+        this.firstError.set('Only PNG files are allowed.');
         this.firstFile.set(null);
         this.firstPreview.set(null);
       } else {
-        this.secondError.set(message);
+        this.secondError.set('Only PNG files are allowed.');
         this.secondFile.set(null);
         this.secondPreview.set(null);
       }
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    const previewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    // Revoke previous URL before creating a new one to prevent memory leaks
+    this.revokeUrl(side);
+    const objectUrl = URL.createObjectURL(file);
 
     if (side === 'first') {
+      this.firstObjectUrl = objectUrl;
       this.firstError.set('');
       this.firstFile.set(file);
-      this.firstPreview.set(previewUrl);
+      this.firstPreview.set(objectUrl);
     } else {
+      this.secondObjectUrl = objectUrl;
       this.secondError.set('');
       this.secondFile.set(file);
-      this.secondPreview.set(previewUrl);
+      this.secondPreview.set(objectUrl);
     }
   }
 
@@ -145,7 +165,7 @@ export class AppComponent implements OnDestroy {
   onCompare(): void {
     const first = this.firstFile();
     const second = this.secondFile();
-    if (first && second) {
+    if (first && second && this.selectedAlgorithms().length > 0) {
       this.showCompare.set(true);
     }
   }

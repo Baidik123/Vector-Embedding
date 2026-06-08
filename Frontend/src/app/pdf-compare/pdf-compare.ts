@@ -1,14 +1,42 @@
-import { Component, Input, signal, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  signal,
+  OnChanges,
+  SimpleChanges,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SafeResourceUrl } from '@angular/platform-browser';
 
-interface ComparisonResult {
-  hamming_distance: number;
-  dhash_similarity: number;
-  hybrid_score: number;
-  band: string;
-  band_description: string;
+export type AlgorithmId = 'dhash' | 'dino_small' | 'dino_large' | 'hybrid';
+
+interface AlgorithmStatus {
+  id: AlgorithmId;
+  label: string;
+  loading: boolean;
+  error: string;
+  similarity: number | null;
+  band: string | null;
+  bandDescription: string | null;
+  hammingDistance?: number;
+  dhashSimilarity?: number;   // hybrid only
+  dinoSimilarity?: number;    // hybrid only
 }
+
+const ALGORITHM_LABELS: Record<AlgorithmId, string> = {
+  dhash:      'dHash',
+  dino_small: 'DINO V2 Small',
+  dino_large: 'DINO V2 Large',
+  hybrid:     'Hybrid',
+};
+
+const ALGORITHM_ENDPOINTS: Record<AlgorithmId, string> = {
+  dhash:      '/compare/dhash',
+  dino_small: '/compare/dino',
+  dino_large: '/compare/dino-large',
+  hybrid:     '/compare/hybrid',
+};
 
 @Component({
   selector: 'app-pdf-compare',
@@ -18,22 +46,25 @@ interface ComparisonResult {
   styleUrl: './pdf-compare.css',
 })
 export class PdfCompare implements OnChanges {
-  @Input() firstPngUrl: SafeResourceUrl | null = null;
-  @Input() secondPngUrl: SafeResourceUrl | null = null;
+  @Input() firstPngUrl: string | null = null;
+  @Input() secondPngUrl: string | null = null;
   @Input() firstFile: File | null = null;
   @Input() secondFile: File | null = null;
+  @Input() selectedAlgorithms: AlgorithmId[] = [];
   @Output() closeCompare = new EventEmitter<void>();
 
   sliderValue = signal(50);
   zoomLevel = signal(1.0);
-  comparisonResult = signal<ComparisonResult | null>(null);
-  isLoading = signal(false);
-  errorMessage = signal('');
+  algorithmStatuses = signal<AlgorithmStatus[]>([]);
 
   private readonly API_URL = 'http://localhost:8000';
 
   ngOnChanges(changes: SimpleChanges): void {
-    if ((changes['firstPngUrl'] || changes['secondPngUrl']) && this.firstFile && this.secondFile) {
+    const relevant =
+      changes['firstPngUrl'] ||
+      changes['secondPngUrl'] ||
+      changes['selectedAlgorithms'];
+    if (relevant && this.firstFile && this.secondFile && this.selectedAlgorithms.length > 0) {
       this.sliderValue.set(50);
       this.zoomLevel.set(1.0);
       this.performComparison();
@@ -41,43 +72,74 @@ export class PdfCompare implements OnChanges {
   }
 
   private performComparison(): void {
-    if (!this.firstFile || !this.secondFile) {
-      this.errorMessage.set('Both files are required for comparison.');
-      return;
+    if (!this.firstFile || !this.secondFile) return;
+
+    this.algorithmStatuses.set(
+      this.selectedAlgorithms.map((id) => ({
+        id,
+        label: ALGORITHM_LABELS[id],
+        loading: true,
+        error: '',
+        similarity: null,
+        band: null,
+        bandDescription: null,
+      }))
+    );
+
+    for (const id of this.selectedAlgorithms) {
+      this.runAlgorithm(id);
     }
+  }
 
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-    this.comparisonResult.set(null);
-
+  private runAlgorithm(id: AlgorithmId): void {
     const formData = new FormData();
-    formData.append('first', this.firstFile);
-    formData.append('second', this.secondFile);
+    formData.append('first', this.firstFile!);
+    formData.append('second', this.secondFile!);
 
-    fetch(`${this.API_URL}/compare`, {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    fetch(`${this.API_URL}${ALGORITHM_ENDPOINTS[id]}`, { method: 'POST', body: formData })
+      .then((res) => {
+        if (!res.ok) {
+          return res.json().then((body) => {
+            throw new Error(body?.detail ?? `HTTP ${res.status}`);
+          });
         }
-        return response.json();
+        return res.json();
       })
-      .then((data: ComparisonResult) => {
-        this.comparisonResult.set(data);
-        this.isLoading.set(false);
+      .then((data) => {
+        this.algorithmStatuses.update((statuses) =>
+          statuses.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  loading: false,
+                  similarity: data.similarity,
+                  band: data.band,
+                  bandDescription: data.band_description,
+                  hammingDistance: data.hamming_distance,
+                  dhashSimilarity: data.dhash_similarity,
+                  dinoSimilarity: data.dino_similarity,
+                }
+              : s
+          )
+        );
       })
-      .catch((error) => {
-        console.error('Comparison error:', error);
-        this.errorMessage.set(`Error: ${error.message || 'Failed to compare images'}`);
-        this.isLoading.set(false);
+      .catch((err: Error) => {
+        this.algorithmStatuses.update((statuses) =>
+          statuses.map((s) =>
+            s.id === id
+              ? { ...s, loading: false, error: err.message || 'Comparison failed' }
+              : s
+          )
+        );
       });
   }
 
+  isAnyLoading(): boolean {
+    return this.algorithmStatuses().some((s) => s.loading);
+  }
+
   onSliderChange(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.sliderValue.set(Number(value));
+    this.sliderValue.set(Number((event.target as HTMLInputElement).value));
   }
 
   zoomIn(): void {
@@ -92,30 +154,15 @@ export class PdfCompare implements OnChanges {
     this.zoomLevel.set(1.0);
   }
 
-  getBandColor(): string {
-    const band = this.comparisonResult()?.band;
+  getBandColor(band: string | null): string {
     switch (band) {
-      case 'Exact Duplicate':
-        return '#ef4444';
-      case 'Likely Duplicate':
-        return '#f97316';
-      case 'Similar – Same Family':
-        return '#22c55e';
-      case 'Similar – Related':
-        return '#3b82f6';
-      case 'Different':
-        return '#9ca3af';
-      default:
-        return '#9ca3af';
+      case 'Exact Duplicate':      return '#ef4444';
+      case 'Likely Duplicate':     return '#f97316';
+      case 'Similar – Same Family': return '#22c55e';
+      case 'Similar – Related':    return '#3b82f6';
+      case 'Different':            return '#9ca3af';
+      default:                     return '#9ca3af';
     }
-  }
-
-  getSimilarityPercentage(): string {
-    const score = this.comparisonResult()?.hybrid_score;
-    if (score !== undefined && score !== null) {
-      return (score * 100).toFixed(1);
-    }
-    return '0';
   }
 
   onClose(): void {

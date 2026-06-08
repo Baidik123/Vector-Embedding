@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
@@ -6,7 +7,43 @@ import numpy as np
 import imagehash
 from io import BytesIO
 
-app = FastAPI(title="AEC Image Similarity Detection", version="1.1.0")
+# ─────────────────────────────────────────────────────────────────────────────
+# DINO V2 — optional dependency block
+# Requires: pip install torch torchvision transformers
+# Small (~86 MB) and Large (~300 MB) are loaded independently so a failure
+# on Large (e.g. OOM) does not disable Small or Hybrid.
+# ─────────────────────────────────────────────────────────────────────────────
+
+try:
+    from transformers import AutoModel, AutoProcessor
+    import torch
+    import torch.nn.functional as F
+    _HAS_TRANSFORMERS = True
+except Exception:
+    _HAS_TRANSFORMERS = False
+
+if _HAS_TRANSFORMERS:
+    try:
+        _dino_processor = AutoProcessor.from_pretrained("facebook/dinov2-small")
+        _dino_model = AutoModel.from_pretrained("facebook/dinov2-small")
+        _dino_model.eval()
+        DINO_AVAILABLE = True
+    except Exception:
+        DINO_AVAILABLE = False
+
+    try:
+        _dino_large_processor = AutoProcessor.from_pretrained("facebook/dinov2-large")
+        _dino_large_model = AutoModel.from_pretrained("facebook/dinov2-large")
+        _dino_large_model.eval()
+        DINO_LARGE_AVAILABLE = True
+    except Exception:
+        DINO_LARGE_AVAILABLE = False
+else:
+    DINO_AVAILABLE = False
+    DINO_LARGE_AVAILABLE = False
+
+
+app = FastAPI(title="AEC Image Similarity Detection", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,31 +58,72 @@ app.add_middleware(
 # CONSTANTS — SINGLE SOURCE OF TRUTH
 # ─────────────────────────────────────────────────────────────────────────────
 
-HASH_SIZE = 16                      # 16×16 dHash grid
+HASH_SIZE = 16
 MAX_BITS  = HASH_SIZE * HASH_SIZE   # 256 bits
 
-# Classification based on similarity score (0-1):
-#   score = 1 - (hamming / 256)
-#
-# Band                Score ≥   Hamming ≤   Interpretation
-# ────────────────────────────────────────────────────────────
-# Exact Duplicate      0.973        7         97.3%+ similar
-# Likely Duplicate     0.902       25         90.2%+ similar
-# Similar – Same       0.781       56         78.1%+ similar
-# Similar – Related    0.70        77         70-78% similar
-# Different           < 0.70       > 77       < 70% similar
+# Hybrid weights — tune after testing with AVAIL thumbnails
+DHASH_WEIGHT = 0.4
+DINO_WEIGHT  = 0.6
 
-BANDS = [
-    (7,   "Exact Duplicate",        "These images are virtually identical."),
-    (25,  "Likely Duplicate",        "Very similar with only minor differences."),
-    (56,  "Similar – Same Family",   "Significant structural similarity — same design family."),
-    (77,  "Similar – Related",       "Moderately similar — related drawing type."),
-    (256, "Different",               "Substantially different drawings."),
+# ── dHash bands ───────────────────────────────────────────────────────────────
+# Thresholds are Hamming distance (lower = more similar).
+# Score equivalent shown for cross-algorithm comparison.
+#
+# Band                 Hamming ≤   Score ≥
+# ────────────────────────────────────────
+# Exact Duplicate           7       0.973
+# Likely Duplicate         25       0.902
+# Similar – Same Family    56       0.781
+# Similar – Related        77       0.699
+# Different               256        —
+
+DHASH_BANDS = [
+    (7,   "Exact Duplicate",       "These images are virtually identical."),
+    (25,  "Likely Duplicate",       "Very similar with only minor differences."),
+    (56,  "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (77,  "Similar – Related",      "Moderately similar — related drawing type."),
+    (256, "Different",              "Substantially different drawings."),
+]
+
+# ── DINO V2 Small bands ───────────────────────────────────────────────────────
+# Thresholds mirror dHash score equivalents (cosine similarity, 0–1).
+# Tune after testing with AVAIL thumbnails.
+
+DINO_BANDS = [
+    (0.973, "Exact Duplicate",       "These images are virtually identical."),
+    (0.902, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.781, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.699, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── DINO V2 Large bands ───────────────────────────────────────────────────────
+# Same starting thresholds as Small — tune independently after testing.
+# Large uses 1024-dim embeddings vs Small's 384-dim.
+
+DINO_LARGE_BANDS = [
+    (0.973, "Exact Duplicate",       "These images are virtually identical."),
+    (0.902, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.781, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.699, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── Hybrid bands ──────────────────────────────────────────────────────────────
+# Applied to: hybrid_score = (dhash × 0.4) + (dino_small × 0.6)
+# Tune independently after observing hybrid score distribution on AVAIL thumbnails.
+
+HYBRID_BANDS = [
+    (0.973, "Exact Duplicate",       "These images are virtually identical."),
+    (0.902, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.781, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.699, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
 ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STAGE 0 — PREPROCESSING
+# PREPROCESSING  (dHash only — DINO models receive raw RGB)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def preprocess_image(image: Image.Image) -> Image.Image:
@@ -73,32 +151,135 @@ def preprocess_image(image: Image.Image) -> Image.Image:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STAGE 1 — dHASH + CLASSIFICATION
+# dHASH
 # ─────────────────────────────────────────────────────────────────────────────
 
 def compute_dhash(image: Image.Image) -> imagehash.ImageHash:
-    """
-    Compute dHash at HASH_SIZE.
-    Returns ImageHash so subtraction (−) gives Hamming distance directly.
-    """
     return imagehash.dhash(image, hash_size=HASH_SIZE)
 
 
 def score_from_hamming(hamming_dist: int) -> float:
-    """Single formula: similarity = 1 − (hamming / MAX_BITS)."""
     return 1.0 - (hamming_dist / MAX_BITS)
 
 
-def classify(hamming_dist: int) -> tuple[str, str]:
-    """
-    Classify using Hamming thresholds (single source of truth).
-    Label and score come from the same hamming_dist → always consistent.
-    """
-    for threshold, label, description in BANDS:
+def classify_dhash(hamming_dist: int) -> tuple[str, str]:
+    for threshold, label, description in DHASH_BANDS:
         if hamming_dist <= threshold:
             return label, description
-    # Fallback
-    return BANDS[-1][1], BANDS[-1][2]
+    return DHASH_BANDS[-1][1], DHASH_BANDS[-1][2]
+
+
+def _run_dhash(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous dHash pipeline — safe to call from thread pool."""
+    hash1 = compute_dhash(preprocess_image(img1))
+    hash2 = compute_dhash(preprocess_image(img2))
+    hamming_dist = hash1 - hash2
+    score = score_from_hamming(hamming_dist)
+    band, description = classify_dhash(hamming_dist)
+    return {
+        "algorithm": "dhash",
+        "similarity": round(score, 4),
+        "hamming_distance": hamming_dist,
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DINO V2 Small
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_dino_embedding(image: Image.Image):
+    inputs = _dino_processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = _dino_model(**inputs)
+    return outputs.last_hidden_state.mean(dim=1)
+
+
+def classify_dino(score: float) -> tuple[str, str]:
+    for threshold, label, description in DINO_BANDS:
+        if score >= threshold:
+            return label, description
+    return DINO_BANDS[-1][1], DINO_BANDS[-1][2]
+
+
+def _run_dino(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous DINO Small inference — safe to call from thread pool."""
+    emb1 = get_dino_embedding(img1)
+    emb2 = get_dino_embedding(img2)
+    score = F.cosine_similarity(emb1, emb2).item()
+    band, description = classify_dino(score)
+    return {
+        "algorithm": "dino_small",
+        "similarity": round(score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DINO V2 Large
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_dino_large_embedding(image: Image.Image):
+    inputs = _dino_large_processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = _dino_large_model(**inputs)
+    return outputs.last_hidden_state.mean(dim=1)
+
+
+def classify_dino_large(score: float) -> tuple[str, str]:
+    for threshold, label, description in DINO_LARGE_BANDS:
+        if score >= threshold:
+            return label, description
+    return DINO_LARGE_BANDS[-1][1], DINO_LARGE_BANDS[-1][2]
+
+
+def _run_dino_large(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous DINO Large inference — safe to call from thread pool."""
+    emb1 = get_dino_large_embedding(img1)
+    emb2 = get_dino_large_embedding(img2)
+    score = F.cosine_similarity(emb1, emb2).item()
+    band, description = classify_dino_large(score)
+    return {
+        "algorithm": "dino_large",
+        "similarity": round(score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HYBRID
+# ─────────────────────────────────────────────────────────────────────────────
+
+def classify_hybrid(score: float) -> tuple[str, str]:
+    for threshold, label, description in HYBRID_BANDS:
+        if score >= threshold:
+            return label, description
+    return HYBRID_BANDS[-1][1], HYBRID_BANDS[-1][2]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SHARED HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def _load_images(
+    first: UploadFile, second: UploadFile
+) -> tuple[Image.Image, Image.Image]:
+    """Read and decode both uploaded files. Raises 400 on any read or format error."""
+    try:
+        first_bytes = await first.read()
+        second_bytes = await second.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read uploaded files: {e}")
+
+    try:
+        first_image = Image.open(BytesIO(first_bytes)).convert("RGB")
+        second_image = Image.open(BytesIO(second_bytes)).convert("RGB")
+        return first_image, second_image
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not decode images: {e}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -110,40 +291,118 @@ async def compare_images(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """Compare two PNG images (Stage 0 + Stage 1)."""
-
-    # Load images
+    """Original dHash endpoint — preserved for backward compatibility."""
+    first_image, second_image = await _load_images(first, second)
     try:
-        first_image = Image.open(BytesIO(await first.read())).convert("RGB")
-        second_image = Image.open(BytesIO(await second.read())).convert("RGB")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not open images: {e}")
-
-    # Process and compare
-    try:
-        hash1 = compute_dhash(preprocess_image(first_image))
-        hash2 = compute_dhash(preprocess_image(second_image))
-
-        hamming_dist = hash1 - hash2          # imagehash built-in Hamming
-        score = score_from_hamming(hamming_dist)
-        band, description = classify(hamming_dist)
-
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, _run_dhash, first_image, second_image)
         return {
-            "hamming_distance": hamming_dist,
-            "dhash_similarity": round(score, 4),
-            "hybrid_score": round(score, 4),
+            "hamming_distance": result["hamming_distance"],
+            "dhash_similarity": result["similarity"],
+            "hybrid_score": result["similarity"],
+            "band": result["band"],
+            "band_description": result["band_description"],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/dhash")
+async def compare_dhash(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """dHash — fast pixel-grid fingerprint comparison."""
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_dhash, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/dino")
+async def compare_dino(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """DINO V2 Small — 384-dim AI embedding, cosine similarity."""
+    if not DINO_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="DINO V2 Small not available — run: pip install torch torchvision transformers",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_dino, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/dino-large")
+async def compare_dino_large(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """DINO V2 Large — 1024-dim AI embedding, cosine similarity."""
+    if not DINO_LARGE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="DINO V2 Large not available — model may not be downloaded yet or ran out of memory on load.",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_dino_large, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/hybrid")
+async def compare_hybrid(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """Hybrid — dHash and DINO Small run in parallel; combined as (dHash×0.4)+(DINO×0.6)."""
+    if not DINO_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Hybrid requires DINO V2 Small — run: pip install torch torchvision transformers",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        dhash_result, dino_result = await asyncio.gather(
+            loop.run_in_executor(None, _run_dhash, first_image, second_image),
+            loop.run_in_executor(None, _run_dino,  first_image, second_image),
+        )
+        hybrid_score = (
+            dhash_result["similarity"] * DHASH_WEIGHT
+            + dino_result["similarity"] * DINO_WEIGHT
+        )
+        band, description = classify_hybrid(hybrid_score)
+        return {
+            "algorithm": "hybrid",
+            "similarity": round(hybrid_score, 4),
+            "dhash_similarity": dhash_result["similarity"],
+            "dino_similarity": dino_result["similarity"],
+            "hamming_distance": dhash_result["hamming_distance"],
             "band": band,
             "band_description": description,
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing error: {e}")
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "ok", "version": "1.1.0"}
+    return {
+        "status": "ok",
+        "version": "3.0.0",
+        "dino_small_available": DINO_AVAILABLE,
+        "dino_large_available": DINO_LARGE_AVAILABLE,
+    }
 
 
 if __name__ == "__main__":
