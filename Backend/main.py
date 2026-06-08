@@ -18,6 +18,7 @@ try:
     from transformers import AutoModel, AutoProcessor
     import torch
     import torch.nn.functional as F
+    from sklearn.neighbors import NearestNeighbors
     _HAS_TRANSFORMERS = True
 except Exception:
     _HAS_TRANSFORMERS = False
@@ -86,31 +87,33 @@ DHASH_BANDS = [
 ]
 
 # ── DINO V2 Small bands ───────────────────────────────────────────────────────
-# Thresholds mirror dHash score equivalents (cosine similarity, 0–1).
+# Thresholds are KNN similarity = 1 / (1 + L2_distance) on L2-normalised embeddings.
+# Derived from cosine equivalents via: d = sqrt(2*(1-cos)), sim = 1/(1+d).
 # Tune after testing with AVAIL thumbnails.
 
 DINO_BANDS = [
-    (0.973, "Exact Duplicate",       "These images are virtually identical."),
-    (0.902, "Likely Duplicate",       "Very similar with only minor differences."),
-    (0.781, "Similar – Same Family",  "Significant structural similarity — same design family."),
-    (0.699, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
 # ── DINO V2 Large bands ───────────────────────────────────────────────────────
-# Same starting thresholds as Small — tune independently after testing.
+# Same KNN similarity thresholds as Small — tune independently after testing.
 # Large uses 1024-dim embeddings vs Small's 384-dim.
 
 DINO_LARGE_BANDS = [
-    (0.973, "Exact Duplicate",       "These images are virtually identical."),
-    (0.902, "Likely Duplicate",       "Very similar with only minor differences."),
-    (0.781, "Similar – Same Family",  "Significant structural similarity — same design family."),
-    (0.699, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
 # ── Hybrid bands ──────────────────────────────────────────────────────────────
 # Applied to: hybrid_score = (dhash × 0.4) + (dino_small × 0.6)
+# DINO component emits cosine-scale display scores so thresholds stay on 0–1 cosine scale.
 # Tune independently after observing hybrid score distribution on AVAIL thumbnails.
 
 HYBRID_BANDS = [
@@ -186,6 +189,31 @@ def _run_dhash(img1: Image.Image, img2: Image.Image) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# KNN SIMILARITY HELPER
+# ─────────────────────────────────────────────────────────────────────────────
+
+def knn_similarity(emb1, emb2) -> float:
+    """L2-normalise both embeddings, find nearest neighbour distance, return 1/(1+dist)."""
+    e1 = F.normalize(emb1, p=2, dim=1).numpy()
+    e2 = F.normalize(emb2, p=2, dim=1).numpy()
+    nn = NearestNeighbors(n_neighbors=1, metric="euclidean")
+    nn.fit(e1)
+    dist, _ = nn.kneighbors(e2)
+    return 1.0 / (1.0 + dist[0][0])
+
+
+def knn_to_cosine_scale(knn_sim: float) -> float:
+    """Convert KNN similarity back to cosine-equivalent scale for display.
+
+    For L2-normalised vectors: dist = 1/knn_sim - 1, cos = 1 - dist²/2.
+    This is a lossless round-trip — band classification uses raw KNN score,
+    but the returned number looks identical to what cosine similarity would show.
+    """
+    dist = (1.0 / knn_sim) - 1.0
+    return 1.0 - (dist ** 2) / 2.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # DINO V2 Small
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -207,11 +235,12 @@ def _run_dino(img1: Image.Image, img2: Image.Image) -> dict:
     """Synchronous DINO Small inference — safe to call from thread pool."""
     emb1 = get_dino_embedding(img1)
     emb2 = get_dino_embedding(img2)
-    score = F.cosine_similarity(emb1, emb2).item()
-    band, description = classify_dino(score)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_dino(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
     return {
         "algorithm": "dino_small",
-        "similarity": round(score, 4),
+        "similarity": round(display_score, 4),
         "band": band,
         "band_description": description,
     }
@@ -239,11 +268,12 @@ def _run_dino_large(img1: Image.Image, img2: Image.Image) -> dict:
     """Synchronous DINO Large inference — safe to call from thread pool."""
     emb1 = get_dino_large_embedding(img1)
     emb2 = get_dino_large_embedding(img2)
-    score = F.cosine_similarity(emb1, emb2).item()
-    band, description = classify_dino_large(score)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_dino_large(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
     return {
         "algorithm": "dino_large",
-        "similarity": round(score, 4),
+        "similarity": round(display_score, 4),
         "band": band,
         "band_description": description,
     }
@@ -326,7 +356,7 @@ async def compare_dino(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """DINO V2 Small — 384-dim AI embedding, cosine similarity."""
+    """DINO V2 Small — 384-dim AI embedding, KNN similarity."""
     if not DINO_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -345,7 +375,7 @@ async def compare_dino_large(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """DINO V2 Large — 1024-dim AI embedding, cosine similarity."""
+    """DINO V2 Large — 1024-dim AI embedding, KNN similarity."""
     if not DINO_LARGE_AVAILABLE:
         raise HTTPException(
             status_code=503,
