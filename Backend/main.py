@@ -39,9 +39,28 @@ if _HAS_TRANSFORMERS:
         DINO_LARGE_AVAILABLE = True
     except Exception:
         DINO_LARGE_AVAILABLE = False
+
+    try:
+        _dino_base_processor = AutoProcessor.from_pretrained("facebook/dinov2-base")
+        _dino_base_model = AutoModel.from_pretrained("facebook/dinov2-base")
+        _dino_base_model.eval()
+        DINO_BASE_AVAILABLE = True
+    except Exception:
+        DINO_BASE_AVAILABLE = False
+
+    try:
+        _clip_processor = AutoProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        _clip_model = AutoModel.from_pretrained("openai/clip-vit-base-patch32")
+        _clip_model.eval()
+        CLIP_AVAILABLE = True
+    except Exception:
+        CLIP_AVAILABLE = False
+
 else:
     DINO_AVAILABLE = False
     DINO_LARGE_AVAILABLE = False
+    DINO_BASE_AVAILABLE = False
+    CLIP_AVAILABLE = False
 
 
 app = FastAPI(title="AEC Image Similarity Detection", version="3.0.0")
@@ -122,6 +141,29 @@ HYBRID_BANDS = [
     (0.902, "Likely Duplicate",       "Very similar with only minor differences."),
     (0.781, "Similar – Same Family",  "Significant structural similarity — same design family."),
     (0.699, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── DINO V2 Base bands ────────────────────────────────────────────────────────
+# 768-dim embeddings — sits between Small (384) and Large (1024).
+# Tune independently after testing.
+
+DINO_BASE_BANDS = [
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── CLIP ViT-B/32 bands ───────────────────────────────────────────────────────
+# 512-dim projected image features. Tune after testing with AEC thumbnails.
+
+CLIP_BANDS = [
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
@@ -274,6 +316,72 @@ def _run_dino_large(img1: Image.Image, img2: Image.Image) -> dict:
     display_score = knn_to_cosine_scale(knn_score)
     return {
         "algorithm": "dino_large",
+        "similarity": round(display_score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DINO V2 Base
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_dino_base_embedding(image: Image.Image):
+    inputs = _dino_base_processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = _dino_base_model(**inputs)
+    return outputs.last_hidden_state.mean(dim=1)
+
+
+def classify_dino_base(score: float) -> tuple[str, str]:
+    for threshold, label, description in DINO_BASE_BANDS:
+        if score >= threshold:
+            return label, description
+    return DINO_BASE_BANDS[-1][1], DINO_BASE_BANDS[-1][2]
+
+
+def _run_dino_base(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous DINO Base inference — safe to call from thread pool."""
+    emb1 = get_dino_base_embedding(img1)
+    emb2 = get_dino_base_embedding(img2)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_dino_base(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
+    return {
+        "algorithm": "dino_base",
+        "similarity": round(display_score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CLIP ViT-B/32
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_clip_embedding(image: Image.Image):
+    inputs = _clip_processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = _clip_model.vision_model(pixel_values=inputs["pixel_values"])
+    return outputs.last_hidden_state.mean(dim=1)
+
+
+def classify_clip(score: float) -> tuple[str, str]:
+    for threshold, label, description in CLIP_BANDS:
+        if score >= threshold:
+            return label, description
+    return CLIP_BANDS[-1][1], CLIP_BANDS[-1][2]
+
+
+def _run_clip(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous CLIP inference — safe to call from thread pool."""
+    emb1 = get_clip_embedding(img1)
+    emb2 = get_clip_embedding(img2)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_clip(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
+    return {
+        "algorithm": "clip",
         "similarity": round(display_score, 4),
         "band": band,
         "band_description": description,
@@ -434,6 +542,44 @@ async def compare_hybrid(
         raise HTTPException(status_code=500, detail=f"Processing error: {e}")
 
 
+@app.post("/compare/dino-base")
+async def compare_dino_base(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """DINO V2 Base — 768-dim AI embedding, KNN similarity."""
+    if not DINO_BASE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="DINO V2 Base not available — model may not be downloaded yet or ran out of memory on load.",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_dino_base, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/clip")
+async def compare_clip(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """CLIP ViT-B/32 — 512-dim vision-language embedding, KNN similarity."""
+    if not CLIP_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="CLIP not available — model may not be downloaded yet or ran out of memory on load.",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_clip, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
 @app.get("/health")
 async def health_check():
     return {
@@ -441,6 +587,8 @@ async def health_check():
         "version": "3.0.0",
         "dino_small_available": DINO_AVAILABLE,
         "dino_large_available": DINO_LARGE_AVAILABLE,
+        "dino_base_available": DINO_BASE_AVAILABLE,
+        "clip_available": CLIP_AVAILABLE,
     }
 
 

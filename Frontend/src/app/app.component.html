@@ -144,7 +144,27 @@
           <span class="algo-desc">AI embedding · 1024-dim · ~300 MB</span>
         </label>
 
-        <label class="algo-option" [class.selected]="isAlgorithmSelected('hybrid')">
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('dino_base')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('dino_base')"
+            (change)="toggleAlgorithm('dino_base')"
+          />
+          <span class="algo-name">DINO V2 <span class="algo-badge">base</span></span>
+          <span class="algo-desc">AI embedding · 768-dim · ~150 MB</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('clip')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('clip')"
+            (change)="toggleAlgorithm('clip')"
+          />
+          <span class="algo-name">CLIP <span class="algo-badge algo-badge--clip">ViT-B/32</span></span>
+          <span class="algo-desc">Vision-language · 512-dim</span>
+        </label>
+
+<label class="algo-option" [class.selected]="isAlgorithmSelected('hybrid')">
           <input
             type="checkbox"
             [checked]="isAlgorithmSelected('hybrid')"

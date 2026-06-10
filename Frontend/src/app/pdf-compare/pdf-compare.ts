@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-export type AlgorithmId = 'dhash' | 'dino_small' | 'dino_large' | 'hybrid';
+export type AlgorithmId = 'dhash' | 'dino_small' | 'dino_large' | 'dino_base' | 'clip' | 'hybrid';
 
 interface AlgorithmStatus {
   id: AlgorithmId;
@@ -29,6 +29,8 @@ const ALGORITHM_LABELS: Record<AlgorithmId, string> = {
   dhash:      'dHash',
   dino_small: 'DINO V2 Small',
   dino_large: 'DINO V2 Large',
+  dino_base:  'DINO V2 Base',
+  clip:       'CLIP',
   hybrid:     'Hybrid',
 };
 
@@ -36,6 +38,8 @@ const ALGORITHM_ENDPOINTS: Record<AlgorithmId, string> = {
   dhash:      '/compare/dhash',
   dino_small: '/compare/dino',
   dino_large: '/compare/dino-large',
+  dino_base:  '/compare/dino-base',
+  clip:       '/compare/clip',
   hybrid:     '/compare/hybrid',
 };
 
