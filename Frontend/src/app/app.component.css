@@ -263,10 +263,10 @@
 
 .algorithm-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
   width: 100%;
-  max-width: 960px;
+  max-width: 1100px;
 }
 
 .algo-option {
@@ -325,8 +325,20 @@
   background: #00A1A3;
 }
 
+.algo-badge--giant {
+  background: #dc2626;
+}
+
 .algo-badge--clip {
   background: #7c3aed;
+}
+
+.algo-badge--cnn {
+  background: #b45309;
+}
+
+.algo-badge--baseline {
+  background: #6b7280;
 }
 
 .algo-desc {

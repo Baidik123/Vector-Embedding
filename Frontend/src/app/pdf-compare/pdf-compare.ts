@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-export type AlgorithmId = 'dhash' | 'dino_small' | 'dino_large' | 'dino_base' | 'clip' | 'hybrid';
+export type AlgorithmId = 'dhash' | 'dino_small' | 'dino_large' | 'dino_giant' | 'dino_base' | 'clip' | 'efficientnet' | 'convnext' | 'resnet' | 'hybrid';
 
 interface AlgorithmStatus {
   id: AlgorithmId;
@@ -29,18 +29,26 @@ const ALGORITHM_LABELS: Record<AlgorithmId, string> = {
   dhash:      'dHash',
   dino_small: 'DINO V2 Small',
   dino_large: 'DINO V2 Large',
-  dino_base:  'DINO V2 Base',
-  clip:       'CLIP',
-  hybrid:     'Hybrid',
+  dino_giant: 'DINO V2 Giant',
+  dino_base:    'DINO V2 Base',
+  clip:         'CLIP',
+  efficientnet: 'EfficientNet-B4',
+  convnext:     'ConvNeXt-Tiny',
+  resnet:       'ResNet-50',
+  hybrid:       'Hybrid',
 };
 
 const ALGORITHM_ENDPOINTS: Record<AlgorithmId, string> = {
   dhash:      '/compare/dhash',
   dino_small: '/compare/dino',
   dino_large: '/compare/dino-large',
-  dino_base:  '/compare/dino-base',
-  clip:       '/compare/clip',
-  hybrid:     '/compare/hybrid',
+  dino_giant: '/compare/dino-giant',
+  dino_base:    '/compare/dino-base',
+  clip:         '/compare/clip',
+  efficientnet: '/compare/efficientnet',
+  convnext:     '/compare/convnext',
+  resnet:       '/compare/resnet',
+  hybrid:       '/compare/hybrid',
 };
 
 @Component({

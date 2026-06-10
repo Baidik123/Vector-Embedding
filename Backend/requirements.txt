@@ -1,11 +1,21 @@
+# ── Web framework ─────────────────────────────────────────────────────────────
 fastapi==0.109.0
 uvicorn==0.27.0
+python-multipart==0.0.6
+
+# ── Image processing ──────────────────────────────────────────────────────────
 pillow==11.0.0
 opencv-python==4.10.0.84
 imagehash==4.3.1
 numpy==1.26.4
-python-multipart==0.0.6
+
+# ── Deep learning — transformer models (DINO V2 Small/Base/Large, CLIP) ───────
 torch
 torchvision
 transformers
+
+# ── Deep learning — CNN models (EfficientNet-B4, ConvNeXt-Tiny, ResNet-50) ────
+# torchvision above covers all three; no extra packages needed.
+
+# ── KNN similarity helper ─────────────────────────────────────────────────────
 scikit-learn

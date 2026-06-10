@@ -19,6 +19,8 @@ try:
     import torch
     import torch.nn.functional as F
     from sklearn.neighbors import NearestNeighbors
+    from torchvision import models as tv_models
+    import torchvision.transforms as tv_transforms
     _HAS_TRANSFORMERS = True
 except Exception:
     _HAS_TRANSFORMERS = False
@@ -56,11 +58,54 @@ if _HAS_TRANSFORMERS:
     except Exception:
         CLIP_AVAILABLE = False
 
+    try:
+        _dino_giant_processor = AutoProcessor.from_pretrained("facebook/dinov2-giant")
+        _dino_giant_model = AutoModel.from_pretrained("facebook/dinov2-giant")
+        _dino_giant_model.eval()
+        DINO_GIANT_AVAILABLE = True
+    except Exception:
+        DINO_GIANT_AVAILABLE = False
+
+    try:
+        _efficientnet = tv_models.efficientnet_b4(weights=tv_models.EfficientNet_B4_Weights.DEFAULT)
+        _efficientnet.classifier = torch.nn.Identity()
+        _efficientnet.eval()
+        EFFICIENTNET_AVAILABLE = True
+    except Exception:
+        EFFICIENTNET_AVAILABLE = False
+
+    try:
+        _convnext = tv_models.convnext_tiny(weights=tv_models.ConvNeXt_Tiny_Weights.DEFAULT)
+        _convnext.classifier = torch.nn.Sequential()
+        _convnext.eval()
+        CONVNEXT_AVAILABLE = True
+    except Exception:
+        CONVNEXT_AVAILABLE = False
+
+    try:
+        _resnet = tv_models.resnet50(weights=tv_models.ResNet50_Weights.DEFAULT)
+        _resnet.fc = torch.nn.Identity()
+        _resnet.eval()
+        RESNET_AVAILABLE = True
+    except Exception:
+        RESNET_AVAILABLE = False
+
+    _cnn_transform = tv_transforms.Compose([
+        tv_transforms.Resize(256),
+        tv_transforms.CenterCrop(224),
+        tv_transforms.ToTensor(),
+        tv_transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
 else:
     DINO_AVAILABLE = False
     DINO_LARGE_AVAILABLE = False
     DINO_BASE_AVAILABLE = False
     CLIP_AVAILABLE = False
+    DINO_GIANT_AVAILABLE = False
+    EFFICIENTNET_AVAILABLE = False
+    CONVNEXT_AVAILABLE = False
+    RESNET_AVAILABLE = False
 
 
 app = FastAPI(title="AEC Image Similarity Detection", version="3.0.0")
@@ -131,6 +176,18 @@ DINO_LARGE_BANDS = [
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
+# ── DINO V2 Giant bands ───────────────────────────────────────────────────────
+# 1536-dim CLS embeddings — 1.1B params, highest capacity ViT.
+# pre-tuning estimates — tune after AVAIL thumbnail dataset is received
+
+DINO_GIANT_BANDS = [
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
 # ── Hybrid bands ──────────────────────────────────────────────────────────────
 # Applied to: hybrid_score = (dhash × 0.4) + (dino_small × 0.3) + (dino_large × 0.3)
 # DINO components emit cosine-scale display scores so thresholds stay on 0–1 cosine scale.
@@ -160,6 +217,40 @@ DINO_BASE_BANDS = [
 # 512-dim projected image features. Tune after testing with AEC thumbnails.
 
 CLIP_BANDS = [
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── EfficientNet-B4 bands ─────────────────────────────────────────────────────
+# pre-tuning estimate — fine-tuning on labeled AVAIL pairs required for production accuracy
+
+EFFICIENTNET_BANDS = [
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── ConvNeXt-Tiny bands ───────────────────────────────────────────────────────
+# pre-tuning estimate — fine-tuning on labeled AVAIL pairs required for production accuracy
+
+CONVNEXT_BANDS = [
+    (0.812, "Exact Duplicate",       "These images are virtually identical."),
+    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
+    (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
+    (0.0,   "Different",              "Substantially different drawings."),
+]
+
+# ── ResNet-50 bands ───────────────────────────────────────────────────────────
+# pre-tuning estimate — fine-tuning on labeled AVAIL pairs required for production accuracy
+# Baseline only — lowest expected accuracy on AEC drawings.
+
+RESNET_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
     (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
     (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
@@ -323,6 +414,39 @@ def _run_dino_large(img1: Image.Image, img2: Image.Image) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# DINO V2 Giant
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_dino_giant_embedding(image: Image.Image):
+    inputs = _dino_giant_processor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = _dino_giant_model(**inputs)
+    return outputs.last_hidden_state[:, 0, :]
+
+
+def classify_dino_giant(score: float) -> tuple[str, str]:
+    for threshold, label, description in DINO_GIANT_BANDS:
+        if score >= threshold:
+            return label, description
+    return DINO_GIANT_BANDS[-1][1], DINO_GIANT_BANDS[-1][2]
+
+
+def _run_dino_giant(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous DINO Giant inference — safe to call from thread pool."""
+    emb1 = get_dino_giant_embedding(img1)
+    emb2 = get_dino_giant_embedding(img2)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_dino_giant(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
+    return {
+        "algorithm": "dino_giant",
+        "similarity": round(display_score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # DINO V2 Base
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -382,6 +506,114 @@ def _run_clip(img1: Image.Image, img2: Image.Image) -> dict:
     display_score = knn_to_cosine_scale(knn_score)
     return {
         "algorithm": "clip",
+        "similarity": round(display_score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CNN SHARED PREPROCESSING
+# Applies AEC-specific binarization via preprocess_image(), converts the
+# resulting grayscale back to 3-channel RGB, then applies ImageNet normalization.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _cnn_preprocess(image: Image.Image):
+    preprocessed = preprocess_image(image).convert("RGB")
+    return _cnn_transform(preprocessed).unsqueeze(0)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EfficientNet-B4  (1792-dim)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_efficientnet_embedding(image: Image.Image):
+    tensor = _cnn_preprocess(image)
+    with torch.no_grad():
+        return _efficientnet(tensor)
+
+
+def classify_efficientnet(score: float) -> tuple[str, str]:
+    for threshold, label, description in EFFICIENTNET_BANDS:
+        if score >= threshold:
+            return label, description
+    return EFFICIENTNET_BANDS[-1][1], EFFICIENTNET_BANDS[-1][2]
+
+
+def _run_efficientnet(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous EfficientNet-B4 inference — safe to call from thread pool."""
+    emb1 = get_efficientnet_embedding(img1)
+    emb2 = get_efficientnet_embedding(img2)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_efficientnet(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
+    return {
+        "algorithm": "efficientnet_b4",
+        "similarity": round(display_score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ConvNeXt-Tiny  (768-dim)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_convnext_embedding(image: Image.Image):
+    tensor = _cnn_preprocess(image)
+    with torch.no_grad():
+        output = _convnext(tensor)
+    return output.view(output.size(0), -1)
+
+
+def classify_convnext(score: float) -> tuple[str, str]:
+    for threshold, label, description in CONVNEXT_BANDS:
+        if score >= threshold:
+            return label, description
+    return CONVNEXT_BANDS[-1][1], CONVNEXT_BANDS[-1][2]
+
+
+def _run_convnext(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous ConvNeXt-Tiny inference — safe to call from thread pool."""
+    emb1 = get_convnext_embedding(img1)
+    emb2 = get_convnext_embedding(img2)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_convnext(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
+    return {
+        "algorithm": "convnext_tiny",
+        "similarity": round(display_score, 4),
+        "band": band,
+        "band_description": description,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ResNet-50  (2048-dim)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_resnet_embedding(image: Image.Image):
+    tensor = _cnn_preprocess(image)
+    with torch.no_grad():
+        return _resnet(tensor)
+
+
+def classify_resnet(score: float) -> tuple[str, str]:
+    for threshold, label, description in RESNET_BANDS:
+        if score >= threshold:
+            return label, description
+    return RESNET_BANDS[-1][1], RESNET_BANDS[-1][2]
+
+
+def _run_resnet(img1: Image.Image, img2: Image.Image) -> dict:
+    """Synchronous ResNet-50 inference — safe to call from thread pool."""
+    emb1 = get_resnet_embedding(img1)
+    emb2 = get_resnet_embedding(img2)
+    knn_score = knn_similarity(emb1, emb2)
+    band, description = classify_resnet(knn_score)
+    display_score = knn_to_cosine_scale(knn_score)
+    return {
+        "algorithm": "resnet50",
         "similarity": round(display_score, 4),
         "band": band,
         "band_description": description,
@@ -542,6 +774,25 @@ async def compare_hybrid(
         raise HTTPException(status_code=500, detail=f"Processing error: {e}")
 
 
+@app.post("/compare/dino-giant")
+async def compare_dino_giant(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """DINOv2 Giant — 1.1B params, 1536-dim CLS embedding, KNN similarity. Highest capacity zero-shot ViT available. RAM requirement ~8GB. Recommended for offline/batch use; not ideal for real-time on CPU."""
+    if not DINO_GIANT_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="DINO V2 Giant not available — model may not be downloaded yet or ran out of memory on load (~8 GB RAM required).",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_dino_giant, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
 @app.post("/compare/dino-base")
 async def compare_dino_base(
     first: UploadFile = File(...),
@@ -580,6 +831,63 @@ async def compare_clip(
         raise HTTPException(status_code=500, detail=f"Processing error: {e}")
 
 
+@app.post("/compare/efficientnet")
+async def compare_efficientnet(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """EfficientNet-B4 — 1792-dim CNN embedding, KNN similarity."""
+    if not EFFICIENTNET_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="EfficientNet-B4 not available — model may not be downloaded yet or ran out of memory on load.",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_efficientnet, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/convnext")
+async def compare_convnext(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """ConvNeXt-Tiny — 768-dim CNN embedding, KNN similarity."""
+    if not CONVNEXT_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="ConvNeXt-Tiny not available — model may not be downloaded yet or ran out of memory on load.",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_convnext, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
+@app.post("/compare/resnet")
+async def compare_resnet(
+    first: UploadFile = File(...),
+    second: UploadFile = File(...),
+):
+    """ResNet-50 — 2048-dim CNN embedding, KNN similarity. Baseline model."""
+    if not RESNET_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="ResNet-50 not available — model may not be downloaded yet or ran out of memory on load.",
+        )
+    first_image, second_image = await _load_images(first, second)
+    try:
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, _run_resnet, first_image, second_image)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Processing error: {e}")
+
+
 @app.get("/health")
 async def health_check():
     return {
@@ -587,8 +895,12 @@ async def health_check():
         "version": "3.0.0",
         "dino_small_available": DINO_AVAILABLE,
         "dino_large_available": DINO_LARGE_AVAILABLE,
+        "dino_giant_available": DINO_GIANT_AVAILABLE,
         "dino_base_available": DINO_BASE_AVAILABLE,
         "clip_available": CLIP_AVAILABLE,
+        "efficientnet_available": EFFICIENTNET_AVAILABLE,
+        "convnext_available": CONVNEXT_AVAILABLE,
+        "resnet_available": RESNET_AVAILABLE,
     }
 
 

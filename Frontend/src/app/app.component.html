@@ -144,6 +144,16 @@
           <span class="algo-desc">AI embedding · 1024-dim · ~300 MB</span>
         </label>
 
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('dino_giant')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('dino_giant')"
+            (change)="toggleAlgorithm('dino_giant')"
+          />
+          <span class="algo-name">DINO V2 <span class="algo-badge algo-badge--giant">giant</span></span>
+          <span class="algo-desc">AI embedding · 1536-dim · ~8 GB RAM</span>
+        </label>
+
         <label class="algo-option" [class.selected]="isAlgorithmSelected('dino_base')">
           <input
             type="checkbox"
@@ -164,7 +174,37 @@
           <span class="algo-desc">Vision-language · 512-dim</span>
         </label>
 
-<label class="algo-option" [class.selected]="isAlgorithmSelected('hybrid')">
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('efficientnet')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('efficientnet')"
+            (change)="toggleAlgorithm('efficientnet')"
+          />
+          <span class="algo-name">EfficientNet <span class="algo-badge algo-badge--cnn">B4</span></span>
+          <span class="algo-desc">CNN · 1792-dim · primary</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('convnext')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('convnext')"
+            (change)="toggleAlgorithm('convnext')"
+          />
+          <span class="algo-name">ConvNeXt <span class="algo-badge algo-badge--cnn">tiny</span></span>
+          <span class="algo-desc">CNN · 768-dim · primary</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('resnet')">
+          <input
+            type="checkbox"
+            [checked]="isAlgorithmSelected('resnet')"
+            (change)="toggleAlgorithm('resnet')"
+          />
+          <span class="algo-name">ResNet <span class="algo-badge algo-badge--baseline">50</span></span>
+          <span class="algo-desc">CNN · 2048-dim · baseline</span>
+        </label>
+
+        <label class="algo-option" [class.selected]="isAlgorithmSelected('hybrid')">
           <input
             type="checkbox"
             [checked]="isAlgorithmSelected('hybrid')"
