@@ -66,7 +66,7 @@
                     <div class="score-row">
                       <span class="score-label">Similarity Score</span>
                       <span class="score-value" [style.color]="getBandColor(status.band)">
-                        {{ (status.similarity! * 100).toFixed(1) }}<span class="percent-sign">%</span>
+                        {{ absScore(status.similarity! * 100).toFixed(1) }}<span class="percent-sign">%</span>
                       </span>
                     </div>
 
@@ -86,14 +86,21 @@
                     @if (status.dhashSimilarity !== undefined) {
                       <div class="metric-row component-row">
                         <span class="metric-label">dHash component <span class="weight-tag">×0.4</span></span>
-                        <span class="metric-value">{{ (status.dhashSimilarity * 100).toFixed(1) }}%</span>
+                        <span class="metric-value">{{ absScore(status.dhashSimilarity * 100).toFixed(1) }}%</span>
                       </div>
                     }
 
                     @if (status.dinoSimilarity !== undefined) {
                       <div class="metric-row component-row">
-                        <span class="metric-label">DINO component <span class="weight-tag">×0.6</span></span>
-                        <span class="metric-value">{{ (status.dinoSimilarity * 100).toFixed(1) }}%</span>
+                        <span class="metric-label">DINO Small component <span class="weight-tag">×0.3</span></span>
+                        <span class="metric-value">{{ absScore(status.dinoSimilarity * 100).toFixed(1) }}%</span>
+                      </div>
+                    }
+
+                    @if (status.dinoLargeSimilarity !== undefined) {
+                      <div class="metric-row component-row">
+                        <span class="metric-label">DINO Large component <span class="weight-tag">×0.3</span></span>
+                        <span class="metric-value">{{ absScore(status.dinoLargeSimilarity * 100).toFixed(1) }}%</span>
                       </div>
                     }
 

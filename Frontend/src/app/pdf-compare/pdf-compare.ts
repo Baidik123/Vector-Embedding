@@ -20,8 +20,9 @@ interface AlgorithmStatus {
   band: string | null;
   bandDescription: string | null;
   hammingDistance?: number;
-  dhashSimilarity?: number;   // hybrid only
-  dinoSimilarity?: number;    // hybrid only
+  dhashSimilarity?: number;       // hybrid only
+  dinoSimilarity?: number;        // hybrid only
+  dinoLargeSimilarity?: number;   // hybrid only
 }
 
 const ALGORITHM_LABELS: Record<AlgorithmId, string> = {
@@ -118,6 +119,7 @@ export class PdfCompare implements OnChanges {
                   hammingDistance: data.hamming_distance,
                   dhashSimilarity: data.dhash_similarity,
                   dinoSimilarity: data.dino_similarity,
+                  dinoLargeSimilarity: data.dino_large_similarity,
                 }
               : s
           )
@@ -163,6 +165,10 @@ export class PdfCompare implements OnChanges {
       case 'Different':            return '#9ca3af';
       default:                     return '#9ca3af';
     }
+  }
+
+  absScore(v: number): number {
+    return Math.abs(v);
   }
 
   onClose(): void {

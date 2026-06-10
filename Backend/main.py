@@ -62,9 +62,10 @@ app.add_middleware(
 HASH_SIZE = 16
 MAX_BITS  = HASH_SIZE * HASH_SIZE   # 256 bits
 
-# Hybrid weights — tune after testing with AVAIL thumbnails
-DHASH_WEIGHT = 0.4
-DINO_WEIGHT  = 0.6
+# Hybrid weights — dHash×0.4, DINO Small×0.3, DINO Large×0.3
+DHASH_WEIGHT      = 0.4
+DINO_WEIGHT       = 0.3
+DINO_LARGE_WEIGHT = 0.3
 
 # ── dHash bands ───────────────────────────────────────────────────────────────
 # Thresholds are Hamming distance (lower = more similar).
@@ -112,8 +113,8 @@ DINO_LARGE_BANDS = [
 ]
 
 # ── Hybrid bands ──────────────────────────────────────────────────────────────
-# Applied to: hybrid_score = (dhash × 0.4) + (dino_small × 0.6)
-# DINO component emits cosine-scale display scores so thresholds stay on 0–1 cosine scale.
+# Applied to: hybrid_score = (dhash × 0.4) + (dino_small × 0.3) + (dino_large × 0.3)
+# DINO components emit cosine-scale display scores so thresholds stay on 0–1 cosine scale.
 # Tune independently after observing hybrid score distribution on AVAIL thumbnails.
 
 HYBRID_BANDS = [
@@ -394,22 +395,29 @@ async def compare_hybrid(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """Hybrid — dHash and DINO Small run in parallel; combined as (dHash×0.4)+(DINO×0.6)."""
+    """Hybrid — dHash, DINO Small, and DINO Large run in parallel; combined as (dHash×0.4)+(DINO Small×0.3)+(DINO Large×0.3)."""
     if not DINO_AVAILABLE:
         raise HTTPException(
             status_code=503,
             detail="Hybrid requires DINO V2 Small — run: pip install torch torchvision transformers",
         )
+    if not DINO_LARGE_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Hybrid requires DINO V2 Large — model may not be downloaded yet or ran out of memory on load.",
+        )
     first_image, second_image = await _load_images(first, second)
     try:
         loop = asyncio.get_running_loop()
-        dhash_result, dino_result = await asyncio.gather(
-            loop.run_in_executor(None, _run_dhash, first_image, second_image),
-            loop.run_in_executor(None, _run_dino,  first_image, second_image),
+        dhash_result, dino_result, dino_large_result = await asyncio.gather(
+            loop.run_in_executor(None, _run_dhash,      first_image, second_image),
+            loop.run_in_executor(None, _run_dino,       first_image, second_image),
+            loop.run_in_executor(None, _run_dino_large, first_image, second_image),
         )
         hybrid_score = (
-            dhash_result["similarity"] * DHASH_WEIGHT
-            + dino_result["similarity"] * DINO_WEIGHT
+            dhash_result["similarity"]       * DHASH_WEIGHT
+            + dino_result["similarity"]      * DINO_WEIGHT
+            + dino_large_result["similarity"] * DINO_LARGE_WEIGHT
         )
         band, description = classify_hybrid(hybrid_score)
         return {
@@ -417,6 +425,7 @@ async def compare_hybrid(
             "similarity": round(hybrid_score, 4),
             "dhash_similarity": dhash_result["similarity"],
             "dino_similarity": dino_result["similarity"],
+            "dino_large_similarity": dino_large_result["similarity"],
             "hamming_distance": dhash_result["hamming_distance"],
             "band": band,
             "band_description": description,
