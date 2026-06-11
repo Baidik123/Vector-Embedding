@@ -1,0 +1,577 @@
+image_1,image_2,estimated_similarity_min_pct,estimated_similarity_max_pct,category,basis
+7,7,100,100,100% similar,Self-pair / same image
+7,8,64,68,Just related,Head detail related
+7,9,60,63,Just related,Head detail related
+7,10,59,62,Different,Head detail family but visibly different
+7,11,58,61,Different,Head detail family but visibly different
+7,12,57,60,Different,Head detail family but visibly different
+7,21,45,58,Different,Door/wall jamb versus head-detail family
+7,22,45,58,Different,Door/wall jamb versus head-detail family
+7,23,45,58,Different,Door/wall jamb versus head-detail family
+7,24,45,58,Different,Door/wall jamb versus head-detail family
+7,25,44,56,Different,Window/masonry versus head-detail family
+7,26,45,58,Different,Door/wall jamb versus head-detail family
+7,27,44,56,Different,Window/masonry versus head-detail family
+7,28,44,56,Different,Window/masonry versus head-detail family
+7,29,45,58,Different,Door/wall jamb versus head-detail family
+7,30,45,58,Different,Door/wall jamb versus head-detail family
+7,31,42,57,Different,Jamb/storefront versus head-detail family
+7,32,42,57,Different,Jamb/storefront versus head-detail family
+7,33,42,57,Different,Jamb/storefront versus head-detail family
+7,34,42,57,Different,Jamb/storefront versus head-detail family
+7,35,42,57,Different,Jamb/storefront versus head-detail family
+7,36,42,57,Different,Jamb/storefront versus head-detail family
+7,37,44,56,Different,Window/masonry versus head-detail family
+7,38,42,57,Different,Jamb/storefront versus head-detail family
+8,7,64,68,Just related,Head detail related
+8,8,100,100,100% similar,Self-pair / same image
+8,9,62,66,Just related,Head detail related
+8,10,61,64,Just related,Head detail related
+8,11,61,63,Just related,Head detail related
+8,12,60,62,Just related,Head detail related
+8,21,45,58,Different,Door/wall jamb versus head-detail family
+8,22,45,58,Different,Door/wall jamb versus head-detail family
+8,23,45,58,Different,Door/wall jamb versus head-detail family
+8,24,45,58,Different,Door/wall jamb versus head-detail family
+8,25,44,56,Different,Window/masonry versus head-detail family
+8,26,45,58,Different,Door/wall jamb versus head-detail family
+8,27,44,56,Different,Window/masonry versus head-detail family
+8,28,44,56,Different,Window/masonry versus head-detail family
+8,29,45,58,Different,Door/wall jamb versus head-detail family
+8,30,45,58,Different,Door/wall jamb versus head-detail family
+8,31,42,57,Different,Jamb/storefront versus head-detail family
+8,32,42,57,Different,Jamb/storefront versus head-detail family
+8,33,42,57,Different,Jamb/storefront versus head-detail family
+8,34,42,57,Different,Jamb/storefront versus head-detail family
+8,35,42,57,Different,Jamb/storefront versus head-detail family
+8,36,42,57,Different,Jamb/storefront versus head-detail family
+8,37,44,56,Different,Window/masonry versus head-detail family
+8,38,42,57,Different,Jamb/storefront versus head-detail family
+9,7,60,63,Just related,Head detail related
+9,8,62,66,Just related,Head detail related
+9,9,100,100,100% similar,Self-pair / same image
+9,10,83,87,Minor similarity,Head detail family
+9,11,79,83,Minor similarity,Head detail family
+9,12,62,65,Just related,Head detail related
+9,21,45,58,Different,Door/wall jamb versus head-detail family
+9,22,45,58,Different,Door/wall jamb versus head-detail family
+9,23,45,58,Different,Door/wall jamb versus head-detail family
+9,24,45,58,Different,Door/wall jamb versus head-detail family
+9,25,44,56,Different,Window/masonry versus head-detail family
+9,26,45,58,Different,Door/wall jamb versus head-detail family
+9,27,44,56,Different,Window/masonry versus head-detail family
+9,28,44,56,Different,Window/masonry versus head-detail family
+9,29,45,58,Different,Door/wall jamb versus head-detail family
+9,30,45,58,Different,Door/wall jamb versus head-detail family
+9,31,42,57,Different,Jamb/storefront versus head-detail family
+9,32,42,57,Different,Jamb/storefront versus head-detail family
+9,33,42,57,Different,Jamb/storefront versus head-detail family
+9,34,42,57,Different,Jamb/storefront versus head-detail family
+9,35,42,57,Different,Jamb/storefront versus head-detail family
+9,36,42,57,Different,Jamb/storefront versus head-detail family
+9,37,44,56,Different,Window/masonry versus head-detail family
+9,38,42,57,Different,Jamb/storefront versus head-detail family
+10,7,59,62,Different,Head detail family but visibly different
+10,8,61,64,Just related,Head detail related
+10,9,83,87,Minor similarity,Head detail family
+10,10,100,100,100% similar,Self-pair / same image
+10,11,91,94,Very similar,Head details with very similar metal-panel/framing composition
+10,12,60,64,Just related,Head detail related
+10,21,45,58,Different,Door/wall jamb versus head-detail family
+10,22,45,58,Different,Door/wall jamb versus head-detail family
+10,23,45,58,Different,Door/wall jamb versus head-detail family
+10,24,45,58,Different,Door/wall jamb versus head-detail family
+10,25,44,56,Different,Window/masonry versus head-detail family
+10,26,45,58,Different,Door/wall jamb versus head-detail family
+10,27,44,56,Different,Window/masonry versus head-detail family
+10,28,44,56,Different,Window/masonry versus head-detail family
+10,29,45,58,Different,Door/wall jamb versus head-detail family
+10,30,45,58,Different,Door/wall jamb versus head-detail family
+10,31,42,57,Different,Jamb/storefront versus head-detail family
+10,32,42,57,Different,Jamb/storefront versus head-detail family
+10,33,42,57,Different,Jamb/storefront versus head-detail family
+10,34,42,57,Different,Jamb/storefront versus head-detail family
+10,35,42,57,Different,Jamb/storefront versus head-detail family
+10,36,42,57,Different,Jamb/storefront versus head-detail family
+10,37,44,56,Different,Window/masonry versus head-detail family
+10,38,42,57,Different,Jamb/storefront versus head-detail family
+11,7,58,61,Different,Head detail family but visibly different
+11,8,61,63,Just related,Head detail related
+11,9,79,83,Minor similarity,Head detail family
+11,10,91,94,Very similar,Head details with very similar metal-panel/framing composition
+11,11,100,100,100% similar,Self-pair / same image
+11,12,61,65,Just related,Head detail related
+11,21,45,58,Different,Door/wall jamb versus head-detail family
+11,22,45,58,Different,Door/wall jamb versus head-detail family
+11,23,45,58,Different,Door/wall jamb versus head-detail family
+11,24,45,58,Different,Door/wall jamb versus head-detail family
+11,25,44,56,Different,Window/masonry versus head-detail family
+11,26,45,58,Different,Door/wall jamb versus head-detail family
+11,27,44,56,Different,Window/masonry versus head-detail family
+11,28,44,56,Different,Window/masonry versus head-detail family
+11,29,45,58,Different,Door/wall jamb versus head-detail family
+11,30,45,58,Different,Door/wall jamb versus head-detail family
+11,31,42,57,Different,Jamb/storefront versus head-detail family
+11,32,42,57,Different,Jamb/storefront versus head-detail family
+11,33,42,57,Different,Jamb/storefront versus head-detail family
+11,34,42,57,Different,Jamb/storefront versus head-detail family
+11,35,42,57,Different,Jamb/storefront versus head-detail family
+11,36,42,57,Different,Jamb/storefront versus head-detail family
+11,37,44,56,Different,Window/masonry versus head-detail family
+11,38,42,57,Different,Jamb/storefront versus head-detail family
+12,7,57,60,Different,Head detail family but visibly different
+12,8,60,62,Just related,Head detail related
+12,9,62,65,Just related,Head detail related
+12,10,60,64,Just related,Head detail related
+12,11,61,65,Just related,Head detail related
+12,12,100,100,100% similar,Self-pair / same image
+12,21,45,58,Different,Door/wall jamb versus head-detail family
+12,22,45,58,Different,Door/wall jamb versus head-detail family
+12,23,45,58,Different,Door/wall jamb versus head-detail family
+12,24,45,58,Different,Door/wall jamb versus head-detail family
+12,25,44,56,Different,Window/masonry versus head-detail family
+12,26,45,58,Different,Door/wall jamb versus head-detail family
+12,27,44,56,Different,Window/masonry versus head-detail family
+12,28,44,56,Different,Window/masonry versus head-detail family
+12,29,45,58,Different,Door/wall jamb versus head-detail family
+12,30,45,58,Different,Door/wall jamb versus head-detail family
+12,31,42,57,Different,Jamb/storefront versus head-detail family
+12,32,42,57,Different,Jamb/storefront versus head-detail family
+12,33,42,57,Different,Jamb/storefront versus head-detail family
+12,34,42,57,Different,Jamb/storefront versus head-detail family
+12,35,42,57,Different,Jamb/storefront versus head-detail family
+12,36,42,57,Different,Jamb/storefront versus head-detail family
+12,37,44,56,Different,Window/masonry versus head-detail family
+12,38,42,57,Different,Jamb/storefront versus head-detail family
+21,7,45,58,Different,Door/wall jamb versus head-detail family
+21,8,45,58,Different,Door/wall jamb versus head-detail family
+21,9,45,58,Different,Door/wall jamb versus head-detail family
+21,10,45,58,Different,Door/wall jamb versus head-detail family
+21,11,45,58,Different,Door/wall jamb versus head-detail family
+21,12,45,58,Different,Door/wall jamb versus head-detail family
+21,21,100,100,100% similar,Self-pair / same image
+21,22,65,69,Just related,Door/wall jamb related
+21,23,63,66,Just related,Door/wall jamb related
+21,24,63,67,Just related,Door/wall jamb related
+21,25,52,59,Different,Window/masonry versus door/wall jamb family
+21,26,66,69,Just related,Door/wall jamb related
+21,27,52,59,Different,Window/masonry versus door/wall jamb family
+21,28,52,59,Different,Window/masonry versus door/wall jamb family
+21,29,72,76,Minor similarity,Door/wall jamb family
+21,30,64,68,Just related,Door/wall jamb related
+21,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+21,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+21,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+21,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+21,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+21,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+21,37,52,59,Different,Window/masonry versus door/wall jamb family
+21,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,7,45,58,Different,Door/wall jamb versus head-detail family
+22,8,45,58,Different,Door/wall jamb versus head-detail family
+22,9,45,58,Different,Door/wall jamb versus head-detail family
+22,10,45,58,Different,Door/wall jamb versus head-detail family
+22,11,45,58,Different,Door/wall jamb versus head-detail family
+22,12,45,58,Different,Door/wall jamb versus head-detail family
+22,21,65,69,Just related,Door/wall jamb related
+22,22,100,100,100% similar,Self-pair / same image
+22,23,70,74,Minor similarity,Door/wall jamb family
+22,24,65,68,Just related,Door/wall jamb related
+22,25,52,59,Different,Window/masonry versus door/wall jamb family
+22,26,63,67,Just related,Door/wall jamb related
+22,27,52,59,Different,Window/masonry versus door/wall jamb family
+22,28,52,59,Different,Window/masonry versus door/wall jamb family
+22,29,63,67,Just related,Door/wall jamb related
+22,30,82,86,Minor similarity,Door/wall jamb family
+22,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+22,37,52,59,Different,Window/masonry versus door/wall jamb family
+22,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,7,45,58,Different,Door/wall jamb versus head-detail family
+23,8,45,58,Different,Door/wall jamb versus head-detail family
+23,9,45,58,Different,Door/wall jamb versus head-detail family
+23,10,45,58,Different,Door/wall jamb versus head-detail family
+23,11,45,58,Different,Door/wall jamb versus head-detail family
+23,12,45,58,Different,Door/wall jamb versus head-detail family
+23,21,63,66,Just related,Door/wall jamb related
+23,22,70,74,Minor similarity,Door/wall jamb family
+23,23,100,100,100% similar,Self-pair / same image
+23,24,62,66,Just related,Door/wall jamb related
+23,25,52,59,Different,Window/masonry versus door/wall jamb family
+23,26,62,66,Just related,Door/wall jamb related
+23,27,52,59,Different,Window/masonry versus door/wall jamb family
+23,28,52,59,Different,Window/masonry versus door/wall jamb family
+23,29,61,68,Just related,Approximate same door/wall jamb subgroup
+23,30,70,73,Minor similarity,Door/wall jamb family
+23,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+23,37,52,59,Different,Window/masonry versus door/wall jamb family
+23,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,7,45,58,Different,Door/wall jamb versus head-detail family
+24,8,45,58,Different,Door/wall jamb versus head-detail family
+24,9,45,58,Different,Door/wall jamb versus head-detail family
+24,10,45,58,Different,Door/wall jamb versus head-detail family
+24,11,45,58,Different,Door/wall jamb versus head-detail family
+24,12,45,58,Different,Door/wall jamb versus head-detail family
+24,21,63,67,Just related,Door/wall jamb related
+24,22,65,68,Just related,Door/wall jamb related
+24,23,62,66,Just related,Door/wall jamb related
+24,24,100,100,100% similar,Self-pair / same image
+24,25,52,59,Different,Window/masonry versus door/wall jamb family
+24,26,61,65,Just related,Door/wall jamb related
+24,27,52,59,Different,Window/masonry versus door/wall jamb family
+24,28,52,59,Different,Window/masonry versus door/wall jamb family
+24,29,62,66,Just related,Door/wall jamb related
+24,30,64,67,Just related,Door/wall jamb related
+24,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+24,37,52,59,Different,Window/masonry versus door/wall jamb family
+24,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+25,7,44,56,Different,Window/masonry versus head-detail family
+25,8,44,56,Different,Window/masonry versus head-detail family
+25,9,44,56,Different,Window/masonry versus head-detail family
+25,10,44,56,Different,Window/masonry versus head-detail family
+25,11,44,56,Different,Window/masonry versus head-detail family
+25,12,44,56,Different,Window/masonry versus head-detail family
+25,21,52,59,Different,Window/masonry versus door/wall jamb family
+25,22,52,59,Different,Window/masonry versus door/wall jamb family
+25,23,52,59,Different,Window/masonry versus door/wall jamb family
+25,24,52,59,Different,Window/masonry versus door/wall jamb family
+25,25,100,100,100% similar,Self-pair / same image
+25,26,52,59,Different,Window/masonry versus door/wall jamb family
+25,27,66,69,Just related,Window/masonry related
+25,28,71,75,Minor similarity,Window/masonry jamb family
+25,29,52,59,Different,Window/masonry versus door/wall jamb family
+25,30,52,59,Different,Window/masonry versus door/wall jamb family
+25,31,52,59,Different,Different systems; both jamb-related but geometrically different
+25,32,52,59,Different,Different systems; both jamb-related but geometrically different
+25,33,52,59,Different,Different systems; both jamb-related but geometrically different
+25,34,52,59,Different,Different systems; both jamb-related but geometrically different
+25,35,52,59,Different,Different systems; both jamb-related but geometrically different
+25,36,52,59,Different,Different systems; both jamb-related but geometrically different
+25,37,61,64,Just related,Window/masonry related
+25,38,52,59,Different,Different systems; both jamb-related but geometrically different
+26,7,45,58,Different,Door/wall jamb versus head-detail family
+26,8,45,58,Different,Door/wall jamb versus head-detail family
+26,9,45,58,Different,Door/wall jamb versus head-detail family
+26,10,45,58,Different,Door/wall jamb versus head-detail family
+26,11,45,58,Different,Door/wall jamb versus head-detail family
+26,12,45,58,Different,Door/wall jamb versus head-detail family
+26,21,66,69,Just related,Door/wall jamb related
+26,22,63,67,Just related,Door/wall jamb related
+26,23,62,66,Just related,Door/wall jamb related
+26,24,61,65,Just related,Door/wall jamb related
+26,25,52,59,Different,Window/masonry versus door/wall jamb family
+26,26,100,100,100% similar,Self-pair / same image
+26,27,52,59,Different,Window/masonry versus door/wall jamb family
+26,28,52,59,Different,Window/masonry versus door/wall jamb family
+26,29,70,74,Minor similarity,Door/wall jamb family
+26,30,61,64,Just related,Door/wall jamb related
+26,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+26,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+26,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+26,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+26,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+26,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+26,37,52,59,Different,Window/masonry versus door/wall jamb family
+26,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+27,7,44,56,Different,Window/masonry versus head-detail family
+27,8,44,56,Different,Window/masonry versus head-detail family
+27,9,44,56,Different,Window/masonry versus head-detail family
+27,10,44,56,Different,Window/masonry versus head-detail family
+27,11,44,56,Different,Window/masonry versus head-detail family
+27,12,44,56,Different,Window/masonry versus head-detail family
+27,21,52,59,Different,Window/masonry versus door/wall jamb family
+27,22,52,59,Different,Window/masonry versus door/wall jamb family
+27,23,52,59,Different,Window/masonry versus door/wall jamb family
+27,24,52,59,Different,Window/masonry versus door/wall jamb family
+27,25,66,69,Just related,Window/masonry related
+27,26,52,59,Different,Window/masonry versus door/wall jamb family
+27,27,100,100,100% similar,Self-pair / same image
+27,28,80,85,Minor similarity,Window/masonry jamb family
+27,29,52,59,Different,Window/masonry versus door/wall jamb family
+27,30,52,59,Different,Window/masonry versus door/wall jamb family
+27,31,52,59,Different,Different systems; both jamb-related but geometrically different
+27,32,52,59,Different,Different systems; both jamb-related but geometrically different
+27,33,52,59,Different,Different systems; both jamb-related but geometrically different
+27,34,52,59,Different,Different systems; both jamb-related but geometrically different
+27,35,52,59,Different,Different systems; both jamb-related but geometrically different
+27,36,52,59,Different,Different systems; both jamb-related but geometrically different
+27,37,63,66,Just related,Storefront/window-masonry related
+27,38,52,59,Different,Different systems; both jamb-related but geometrically different
+28,7,44,56,Different,Window/masonry versus head-detail family
+28,8,44,56,Different,Window/masonry versus head-detail family
+28,9,44,56,Different,Window/masonry versus head-detail family
+28,10,44,56,Different,Window/masonry versus head-detail family
+28,11,44,56,Different,Window/masonry versus head-detail family
+28,12,44,56,Different,Window/masonry versus head-detail family
+28,21,52,59,Different,Window/masonry versus door/wall jamb family
+28,22,52,59,Different,Window/masonry versus door/wall jamb family
+28,23,52,59,Different,Window/masonry versus door/wall jamb family
+28,24,52,59,Different,Window/masonry versus door/wall jamb family
+28,25,71,75,Minor similarity,Window/masonry jamb family
+28,26,52,59,Different,Window/masonry versus door/wall jamb family
+28,27,80,85,Minor similarity,Window/masonry jamb family
+28,28,100,100,100% similar,Self-pair / same image
+28,29,52,59,Different,Window/masonry versus door/wall jamb family
+28,30,52,59,Different,Window/masonry versus door/wall jamb family
+28,31,52,59,Different,Different systems; both jamb-related but geometrically different
+28,32,52,59,Different,Different systems; both jamb-related but geometrically different
+28,33,52,59,Different,Different systems; both jamb-related but geometrically different
+28,34,52,59,Different,Different systems; both jamb-related but geometrically different
+28,35,52,59,Different,Different systems; both jamb-related but geometrically different
+28,36,52,59,Different,Different systems; both jamb-related but geometrically different
+28,37,64,68,Just related,Storefront/window-masonry related
+28,38,52,59,Different,Different systems; both jamb-related but geometrically different
+29,7,45,58,Different,Door/wall jamb versus head-detail family
+29,8,45,58,Different,Door/wall jamb versus head-detail family
+29,9,45,58,Different,Door/wall jamb versus head-detail family
+29,10,45,58,Different,Door/wall jamb versus head-detail family
+29,11,45,58,Different,Door/wall jamb versus head-detail family
+29,12,45,58,Different,Door/wall jamb versus head-detail family
+29,21,72,76,Minor similarity,Door/wall jamb family
+29,22,63,67,Just related,Door/wall jamb related
+29,23,61,68,Just related,Approximate same door/wall jamb subgroup
+29,24,62,66,Just related,Door/wall jamb related
+29,25,52,59,Different,Window/masonry versus door/wall jamb family
+29,26,70,74,Minor similarity,Door/wall jamb family
+29,27,52,59,Different,Window/masonry versus door/wall jamb family
+29,28,52,59,Different,Window/masonry versus door/wall jamb family
+29,29,100,100,100% similar,Self-pair / same image
+29,30,62,65,Just related,Door/wall jamb related
+29,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+29,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+29,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+29,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+29,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+29,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+29,37,52,59,Different,Window/masonry versus door/wall jamb family
+29,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,7,45,58,Different,Door/wall jamb versus head-detail family
+30,8,45,58,Different,Door/wall jamb versus head-detail family
+30,9,45,58,Different,Door/wall jamb versus head-detail family
+30,10,45,58,Different,Door/wall jamb versus head-detail family
+30,11,45,58,Different,Door/wall jamb versus head-detail family
+30,12,45,58,Different,Door/wall jamb versus head-detail family
+30,21,64,68,Just related,Door/wall jamb related
+30,22,82,86,Minor similarity,Door/wall jamb family
+30,23,70,73,Minor similarity,Door/wall jamb family
+30,24,64,67,Just related,Door/wall jamb related
+30,25,52,59,Different,Window/masonry versus door/wall jamb family
+30,26,61,64,Just related,Door/wall jamb related
+30,27,52,59,Different,Window/masonry versus door/wall jamb family
+30,28,52,59,Different,Window/masonry versus door/wall jamb family
+30,29,62,65,Just related,Door/wall jamb related
+30,30,100,100,100% similar,Self-pair / same image
+30,31,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,32,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,33,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,34,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,35,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,36,48,58,Different,Storefront/jamb versus door/wall jamb family
+30,37,52,59,Different,Window/masonry versus door/wall jamb family
+30,38,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,7,42,57,Different,Jamb/storefront versus head-detail family
+31,8,42,57,Different,Jamb/storefront versus head-detail family
+31,9,42,57,Different,Jamb/storefront versus head-detail family
+31,10,42,57,Different,Jamb/storefront versus head-detail family
+31,11,42,57,Different,Jamb/storefront versus head-detail family
+31,12,42,57,Different,Jamb/storefront versus head-detail family
+31,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,25,52,59,Different,Different systems; both jamb-related but geometrically different
+31,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,27,52,59,Different,Different systems; both jamb-related but geometrically different
+31,28,52,59,Different,Different systems; both jamb-related but geometrically different
+31,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+31,31,100,100,100% similar,Self-pair / same image
+31,32,61,65,Just related,Simplified horizontal detail versus storefront jamb
+31,33,60,64,Just related,Same storefront/jamb family across subtypes
+31,34,78,82,Minor similarity,Storefront/steel jamb family
+31,35,61,65,Just related,Same storefront/jamb family across subtypes
+31,36,76,80,Minor similarity,Storefront/steel jamb family
+31,37,52,59,Different,Different systems; both jamb-related but geometrically different
+31,38,70,74,Minor similarity,Storefront/steel jamb family
+32,7,42,57,Different,Jamb/storefront versus head-detail family
+32,8,42,57,Different,Jamb/storefront versus head-detail family
+32,9,42,57,Different,Jamb/storefront versus head-detail family
+32,10,42,57,Different,Jamb/storefront versus head-detail family
+32,11,42,57,Different,Jamb/storefront versus head-detail family
+32,12,42,57,Different,Jamb/storefront versus head-detail family
+32,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,25,52,59,Different,Different systems; both jamb-related but geometrically different
+32,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,27,52,59,Different,Different systems; both jamb-related but geometrically different
+32,28,52,59,Different,Different systems; both jamb-related but geometrically different
+32,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+32,31,61,65,Just related,Simplified horizontal detail versus storefront jamb
+32,32,100,100,100% similar,Self-pair / same image
+32,33,82,86,Minor similarity,Similar simplified horizontal storefront/jamb details
+32,34,61,65,Just related,Simplified horizontal detail versus square-post storefront jamb
+32,35,80,84,Minor similarity,Similar simplified horizontal storefront/jamb details
+32,36,61,65,Just related,Simplified horizontal detail versus square-post storefront jamb
+32,37,52,59,Different,Different systems; both jamb-related but geometrically different
+32,38,60,64,Just related,Simplified horizontal detail versus storefront jamb
+33,7,42,57,Different,Jamb/storefront versus head-detail family
+33,8,42,57,Different,Jamb/storefront versus head-detail family
+33,9,42,57,Different,Jamb/storefront versus head-detail family
+33,10,42,57,Different,Jamb/storefront versus head-detail family
+33,11,42,57,Different,Jamb/storefront versus head-detail family
+33,12,42,57,Different,Jamb/storefront versus head-detail family
+33,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,25,52,59,Different,Different systems; both jamb-related but geometrically different
+33,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,27,52,59,Different,Different systems; both jamb-related but geometrically different
+33,28,52,59,Different,Different systems; both jamb-related but geometrically different
+33,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+33,31,60,64,Just related,Same storefront/jamb family across subtypes
+33,32,82,86,Minor similarity,Similar simplified horizontal storefront/jamb details
+33,33,100,100,100% similar,Self-pair / same image
+33,34,62,66,Just related,Storefront/jamb related
+33,35,90,93,Very similar,Thin simplified horizontal storefront/jamb details with very similar composition
+33,36,62,65,Just related,Storefront/jamb related
+33,37,52,59,Different,Different systems; both jamb-related but geometrically different
+33,38,60,62,Just related,Same storefront/jamb family across subtypes
+34,7,42,57,Different,Jamb/storefront versus head-detail family
+34,8,42,57,Different,Jamb/storefront versus head-detail family
+34,9,42,57,Different,Jamb/storefront versus head-detail family
+34,10,42,57,Different,Jamb/storefront versus head-detail family
+34,11,42,57,Different,Jamb/storefront versus head-detail family
+34,12,42,57,Different,Jamb/storefront versus head-detail family
+34,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,25,52,59,Different,Different systems; both jamb-related but geometrically different
+34,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,27,52,59,Different,Different systems; both jamb-related but geometrically different
+34,28,52,59,Different,Different systems; both jamb-related but geometrically different
+34,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+34,31,78,82,Minor similarity,Storefront/steel jamb family
+34,32,61,65,Just related,Simplified horizontal detail versus square-post storefront jamb
+34,33,62,66,Just related,Storefront/jamb related
+34,34,100,100,100% similar,Self-pair / same image
+34,35,63,67,Just related,Storefront/jamb related
+34,36,93,95,Very similar,Closest jamb-detail match; same central rectangular member and storefront interface
+34,37,52,59,Different,Different systems; both jamb-related but geometrically different
+34,38,72,77,Minor similarity,Storefront/steel jamb family
+35,7,42,57,Different,Jamb/storefront versus head-detail family
+35,8,42,57,Different,Jamb/storefront versus head-detail family
+35,9,42,57,Different,Jamb/storefront versus head-detail family
+35,10,42,57,Different,Jamb/storefront versus head-detail family
+35,11,42,57,Different,Jamb/storefront versus head-detail family
+35,12,42,57,Different,Jamb/storefront versus head-detail family
+35,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,25,52,59,Different,Different systems; both jamb-related but geometrically different
+35,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,27,52,59,Different,Different systems; both jamb-related but geometrically different
+35,28,52,59,Different,Different systems; both jamb-related but geometrically different
+35,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+35,31,61,65,Just related,Same storefront/jamb family across subtypes
+35,32,80,84,Minor similarity,Similar simplified horizontal storefront/jamb details
+35,33,90,93,Very similar,Thin simplified horizontal storefront/jamb details with very similar composition
+35,34,63,67,Just related,Storefront/jamb related
+35,35,100,100,100% similar,Self-pair / same image
+35,36,63,66,Just related,Storefront/jamb related
+35,37,52,59,Different,Different systems; both jamb-related but geometrically different
+35,38,60,63,Just related,Same storefront/jamb family across subtypes
+36,7,42,57,Different,Jamb/storefront versus head-detail family
+36,8,42,57,Different,Jamb/storefront versus head-detail family
+36,9,42,57,Different,Jamb/storefront versus head-detail family
+36,10,42,57,Different,Jamb/storefront versus head-detail family
+36,11,42,57,Different,Jamb/storefront versus head-detail family
+36,12,42,57,Different,Jamb/storefront versus head-detail family
+36,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,25,52,59,Different,Different systems; both jamb-related but geometrically different
+36,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,27,52,59,Different,Different systems; both jamb-related but geometrically different
+36,28,52,59,Different,Different systems; both jamb-related but geometrically different
+36,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+36,31,76,80,Minor similarity,Storefront/steel jamb family
+36,32,61,65,Just related,Simplified horizontal detail versus square-post storefront jamb
+36,33,62,65,Just related,Storefront/jamb related
+36,34,93,95,Very similar,Closest jamb-detail match; same central rectangular member and storefront interface
+36,35,63,66,Just related,Storefront/jamb related
+36,36,100,100,100% similar,Self-pair / same image
+36,37,52,59,Different,Different systems; both jamb-related but geometrically different
+36,38,72,76,Minor similarity,Storefront/steel jamb family
+37,7,44,56,Different,Window/masonry versus head-detail family
+37,8,44,56,Different,Window/masonry versus head-detail family
+37,9,44,56,Different,Window/masonry versus head-detail family
+37,10,44,56,Different,Window/masonry versus head-detail family
+37,11,44,56,Different,Window/masonry versus head-detail family
+37,12,44,56,Different,Window/masonry versus head-detail family
+37,21,52,59,Different,Window/masonry versus door/wall jamb family
+37,22,52,59,Different,Window/masonry versus door/wall jamb family
+37,23,52,59,Different,Window/masonry versus door/wall jamb family
+37,24,52,59,Different,Window/masonry versus door/wall jamb family
+37,25,61,64,Just related,Window/masonry related
+37,26,52,59,Different,Window/masonry versus door/wall jamb family
+37,27,63,66,Just related,Storefront/window-masonry related
+37,28,64,68,Just related,Storefront/window-masonry related
+37,29,52,59,Different,Window/masonry versus door/wall jamb family
+37,30,52,59,Different,Window/masonry versus door/wall jamb family
+37,31,52,59,Different,Different systems; both jamb-related but geometrically different
+37,32,52,59,Different,Different systems; both jamb-related but geometrically different
+37,33,52,59,Different,Different systems; both jamb-related but geometrically different
+37,34,52,59,Different,Different systems; both jamb-related but geometrically different
+37,35,52,59,Different,Different systems; both jamb-related but geometrically different
+37,36,52,59,Different,Different systems; both jamb-related but geometrically different
+37,37,100,100,100% similar,Self-pair / same image
+37,38,52,59,Different,Different systems; both jamb-related but geometrically different
+38,7,42,57,Different,Jamb/storefront versus head-detail family
+38,8,42,57,Different,Jamb/storefront versus head-detail family
+38,9,42,57,Different,Jamb/storefront versus head-detail family
+38,10,42,57,Different,Jamb/storefront versus head-detail family
+38,11,42,57,Different,Jamb/storefront versus head-detail family
+38,12,42,57,Different,Jamb/storefront versus head-detail family
+38,21,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,22,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,23,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,24,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,25,52,59,Different,Different systems; both jamb-related but geometrically different
+38,26,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,27,52,59,Different,Different systems; both jamb-related but geometrically different
+38,28,52,59,Different,Different systems; both jamb-related but geometrically different
+38,29,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,30,48,58,Different,Storefront/jamb versus door/wall jamb family
+38,31,70,74,Minor similarity,Storefront/steel jamb family
+38,32,60,64,Just related,Simplified horizontal detail versus storefront jamb
+38,33,60,62,Just related,Same storefront/jamb family across subtypes
+38,34,72,77,Minor similarity,Storefront/steel jamb family
+38,35,60,63,Just related,Same storefront/jamb family across subtypes
+38,36,72,76,Minor similarity,Storefront/steel jamb family
+38,37,52,59,Different,Different systems; both jamb-related but geometrically different
+38,38,100,100,100% similar,Self-pair / same image

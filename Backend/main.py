@@ -252,7 +252,7 @@ CONVNEXT_BANDS = [
 
 RESNET_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
-    (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
+    (0.693, "Likely Duplicate",      "Very similar with only minor differences."),
     (0.602, "Similar – Same Family",  "Significant structural similarity — same design family."),
     (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
