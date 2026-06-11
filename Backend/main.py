@@ -7,13 +7,6 @@ import numpy as np
 import imagehash
 from io import BytesIO
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DINO V2 — optional dependency block
-# Requires: pip install torch torchvision transformers
-# Small (~86 MB) and Large (~300 MB) are loaded independently so a failure
-# on Large (e.g. OOM) does not disable Small or Hybrid.
-# ─────────────────────────────────────────────────────────────────────────────
-
 try:
     from transformers import AutoModel, AutoProcessor
     import torch
@@ -119,29 +112,12 @@ app.add_middleware(
 )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONSTANTS — SINGLE SOURCE OF TRUTH
-# ─────────────────────────────────────────────────────────────────────────────
-
 HASH_SIZE = 16
-MAX_BITS  = HASH_SIZE * HASH_SIZE   # 256 bits
+MAX_BITS  = HASH_SIZE * HASH_SIZE
 
-# Hybrid weights — dHash×0.4, DINO Small×0.3, DINO Large×0.3
 DHASH_WEIGHT      = 0.4
 DINO_WEIGHT       = 0.3
 DINO_LARGE_WEIGHT = 0.3
-
-# ── dHash bands ───────────────────────────────────────────────────────────────
-# Thresholds are Hamming distance (lower = more similar).
-# Score equivalent shown for cross-algorithm comparison.
-#
-# Band                 Hamming ≤   Score ≥
-# ────────────────────────────────────────
-# Exact Duplicate           7       0.973
-# Likely Duplicate         25       0.902
-# Similar – Same Family    56       0.781
-# Similar – Related        77       0.699
-# Different               256        —
 
 DHASH_BANDS = [
     (7,   "Exact Duplicate",       "These images are virtually identical."),
@@ -151,11 +127,6 @@ DHASH_BANDS = [
     (256, "Different",              "Substantially different drawings."),
 ]
 
-# ── DINO V2 Small bands ───────────────────────────────────────────────────────
-# Thresholds are KNN similarity = 1 / (1 + L2_distance) on L2-normalised embeddings.
-# Derived from cosine equivalents via: d = sqrt(2*(1-cos)), sim = 1/(1+d).
-# Tune after testing with AVAIL thumbnails.
-
 DINO_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
     (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
@@ -163,10 +134,6 @@ DINO_BANDS = [
     (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
-
-# ── DINO V2 Large bands ───────────────────────────────────────────────────────
-# Same KNN similarity thresholds as Small — tune independently after testing.
-# Large uses 1024-dim embeddings vs Small's 384-dim.
 
 DINO_LARGE_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
@@ -176,10 +143,6 @@ DINO_LARGE_BANDS = [
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
-# ── DINO V2 Giant bands ───────────────────────────────────────────────────────
-# 1536-dim CLS embeddings — 1.1B params, highest capacity ViT.
-# pre-tuning estimates — tune after AVAIL thumbnail dataset is received
-
 DINO_GIANT_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
     (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
@@ -187,11 +150,6 @@ DINO_GIANT_BANDS = [
     (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
-
-# ── Hybrid bands ──────────────────────────────────────────────────────────────
-# Applied to: hybrid_score = (dhash × 0.4) + (dino_small × 0.3) + (dino_large × 0.3)
-# DINO components emit cosine-scale display scores so thresholds stay on 0–1 cosine scale.
-# Tune independently after observing hybrid score distribution on AVAIL thumbnails.
 
 HYBRID_BANDS = [
     (0.973, "Exact Duplicate",       "These images are virtually identical."),
@@ -201,10 +159,6 @@ HYBRID_BANDS = [
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
-# ── DINO V2 Base bands ────────────────────────────────────────────────────────
-# 768-dim embeddings — sits between Small (384) and Large (1024).
-# Tune independently after testing.
-
 DINO_BASE_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
     (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
@@ -212,9 +166,6 @@ DINO_BASE_BANDS = [
     (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
-
-# ── CLIP ViT-B/32 bands ───────────────────────────────────────────────────────
-# 512-dim projected image features. Tune after testing with AEC thumbnails.
 
 CLIP_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
@@ -224,9 +175,6 @@ CLIP_BANDS = [
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
-# ── EfficientNet-B4 bands ─────────────────────────────────────────────────────
-# pre-tuning estimate — fine-tuning on labeled AVAIL pairs required for production accuracy
-
 EFFICIENTNET_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
     (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
@@ -235,9 +183,6 @@ EFFICIENTNET_BANDS = [
     (0.0,   "Different",              "Substantially different drawings."),
 ]
 
-# ── ConvNeXt-Tiny bands ───────────────────────────────────────────────────────
-# pre-tuning estimate — fine-tuning on labeled AVAIL pairs required for production accuracy
-
 CONVNEXT_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
     (0.693, "Likely Duplicate",       "Very similar with only minor differences."),
@@ -245,10 +190,6 @@ CONVNEXT_BANDS = [
     (0.563, "Similar – Related",      "Moderately similar — related drawing type."),
     (0.0,   "Different",              "Substantially different drawings."),
 ]
-
-# ── ResNet-50 bands ───────────────────────────────────────────────────────────
-# pre-tuning estimate — fine-tuning on labeled AVAIL pairs required for production accuracy
-# Baseline only — lowest expected accuracy on AEC drawings.
 
 RESNET_BANDS = [
     (0.812, "Exact Duplicate",       "These images are virtually identical."),
@@ -259,18 +200,7 @@ RESNET_BANDS = [
 ]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PREPROCESSING  (dHash only — DINO models receive raw RGB)
-# ─────────────────────────────────────────────────────────────────────────────
-
 def preprocess_image(image: Image.Image) -> Image.Image:
-    """
-    1. Convert to grayscale
-    2. Otsu binarization
-    3. Invert to black-on-white
-    4. Fixed-region title block masking (bottom 15% height, right 20% width)
-    5. Light Gaussian blur to reduce rendering artifacts
-    """
     img_array = np.array(image)
 
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
@@ -279,17 +209,13 @@ def preprocess_image(image: Image.Image) -> Image.Image:
 
     h, w = inverted.shape
     mask = np.ones((h, w), dtype=np.uint8) * 255
-    mask[int(0.85 * h):, :] = 0    # bottom 15%
-    mask[:, int(0.80 * w):] = 0    # right 20%
+    mask[int(0.85 * h):, :] = 0    
+    mask[:, int(0.80 * w):] = 0    
     masked = cv2.bitwise_and(inverted, inverted, mask=mask)
 
     blurred = cv2.GaussianBlur(masked, (3, 3), 0)
     return Image.fromarray(blurred)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# dHASH
-# ─────────────────────────────────────────────────────────────────────────────
 
 def compute_dhash(image: Image.Image) -> imagehash.ImageHash:
     return imagehash.dhash(image, hash_size=HASH_SIZE)
@@ -322,12 +248,7 @@ def _run_dhash(img1: Image.Image, img2: Image.Image) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# KNN SIMILARITY HELPER
-# ─────────────────────────────────────────────────────────────────────────────
-
 def knn_similarity(emb1, emb2) -> float:
-    """L2-normalise both embeddings, find nearest neighbour distance, return 1/(1+dist)."""
     e1 = F.normalize(emb1, p=2, dim=1).numpy()
     e2 = F.normalize(emb2, p=2, dim=1).numpy()
     nn = NearestNeighbors(n_neighbors=1, metric="euclidean")
@@ -337,19 +258,9 @@ def knn_similarity(emb1, emb2) -> float:
 
 
 def knn_to_cosine_scale(knn_sim: float) -> float:
-    """Convert KNN similarity back to cosine-equivalent scale for display.
-
-    For L2-normalised vectors: dist = 1/knn_sim - 1, cos = 1 - dist²/2.
-    This is a lossless round-trip — band classification uses raw KNN score,
-    but the returned number looks identical to what cosine similarity would show.
-    """
     dist = (1.0 / knn_sim) - 1.0
     return 1.0 - (dist ** 2) / 2.0
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# DINO V2 Small
-# ─────────────────────────────────────────────────────────────────────────────
 
 def get_dino_embedding(image: Image.Image):
     inputs = _dino_processor(images=image, return_tensors="pt")
@@ -380,10 +291,6 @@ def _run_dino(img1: Image.Image, img2: Image.Image) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DINO V2 Large
-# ─────────────────────────────────────────────────────────────────────────────
-
 def get_dino_large_embedding(image: Image.Image):
     inputs = _dino_large_processor(images=image, return_tensors="pt")
     with torch.no_grad():
@@ -412,10 +319,6 @@ def _run_dino_large(img1: Image.Image, img2: Image.Image) -> dict:
         "band_description": description,
     }
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# DINO V2 Giant
-# ─────────────────────────────────────────────────────────────────────────────
 
 def get_dino_giant_embedding(image: Image.Image):
     inputs = _dino_giant_processor(images=image, return_tensors="pt")
@@ -446,10 +349,6 @@ def _run_dino_giant(img1: Image.Image, img2: Image.Image) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DINO V2 Base
-# ─────────────────────────────────────────────────────────────────────────────
-
 def get_dino_base_embedding(image: Image.Image):
     inputs = _dino_base_processor(images=image, return_tensors="pt")
     with torch.no_grad():
@@ -478,10 +377,6 @@ def _run_dino_base(img1: Image.Image, img2: Image.Image) -> dict:
         "band_description": description,
     }
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CLIP ViT-B/32
-# ─────────────────────────────────────────────────────────────────────────────
 
 def get_clip_embedding(image: Image.Image):
     inputs = _clip_processor(images=image, return_tensors="pt")
@@ -512,20 +407,10 @@ def _run_clip(img1: Image.Image, img2: Image.Image) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CNN SHARED PREPROCESSING
-# Applies AEC-specific binarization via preprocess_image(), converts the
-# resulting grayscale back to 3-channel RGB, then applies ImageNet normalization.
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _cnn_preprocess(image: Image.Image):
     preprocessed = preprocess_image(image).convert("RGB")
     return _cnn_transform(preprocessed).unsqueeze(0)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# EfficientNet-B4  (1792-dim)
-# ─────────────────────────────────────────────────────────────────────────────
 
 def get_efficientnet_embedding(image: Image.Image):
     tensor = _cnn_preprocess(image)
@@ -554,10 +439,6 @@ def _run_efficientnet(img1: Image.Image, img2: Image.Image) -> dict:
         "band_description": description,
     }
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ConvNeXt-Tiny  (768-dim)
-# ─────────────────────────────────────────────────────────────────────────────
 
 def get_convnext_embedding(image: Image.Image):
     tensor = _cnn_preprocess(image)
@@ -588,10 +469,6 @@ def _run_convnext(img1: Image.Image, img2: Image.Image) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ResNet-50  (2048-dim)
-# ─────────────────────────────────────────────────────────────────────────────
-
 def get_resnet_embedding(image: Image.Image):
     tensor = _cnn_preprocess(image)
     with torch.no_grad():
@@ -620,10 +497,6 @@ def _run_resnet(img1: Image.Image, img2: Image.Image) -> dict:
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# HYBRID
-# ─────────────────────────────────────────────────────────────────────────────
-
 def classify_hybrid(score: float) -> tuple[str, str]:
     for threshold, label, description in HYBRID_BANDS:
         if score >= threshold:
@@ -631,14 +504,9 @@ def classify_hybrid(score: float) -> tuple[str, str]:
     return HYBRID_BANDS[-1][1], HYBRID_BANDS[-1][2]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SHARED HELPERS
-# ─────────────────────────────────────────────────────────────────────────────
-
 async def _load_images(
     first: UploadFile, second: UploadFile
 ) -> tuple[Image.Image, Image.Image]:
-    """Read and decode both uploaded files. Raises 400 on any read or format error."""
     try:
         first_bytes = await first.read()
         second_bytes = await second.read()
@@ -653,16 +521,11 @@ async def _load_images(
         raise HTTPException(status_code=400, detail=f"Could not decode images: {e}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# ENDPOINTS
-# ─────────────────────────────────────────────────────────────────────────────
-
 @app.post("/compare")
 async def compare_images(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """Original dHash endpoint — preserved for backward compatibility."""
     first_image, second_image = await _load_images(first, second)
     try:
         loop = asyncio.get_running_loop()
@@ -683,7 +546,6 @@ async def compare_dhash(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """dHash — fast pixel-grid fingerprint comparison."""
     first_image, second_image = await _load_images(first, second)
     try:
         loop = asyncio.get_running_loop()
@@ -697,7 +559,6 @@ async def compare_dino(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """DINO V2 Small — 384-dim AI embedding, KNN similarity."""
     if not DINO_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -716,7 +577,6 @@ async def compare_dino_large(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """DINO V2 Large — 1024-dim AI embedding, KNN similarity."""
     if not DINO_LARGE_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -735,7 +595,6 @@ async def compare_hybrid(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """Hybrid — dHash, DINO Small, and DINO Large run in parallel; combined as (dHash×0.4)+(DINO Small×0.3)+(DINO Large×0.3)."""
     if not DINO_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -779,7 +638,6 @@ async def compare_dino_giant(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """DINOv2 Giant — 1.1B params, 1536-dim CLS embedding, KNN similarity. Highest capacity zero-shot ViT available. RAM requirement ~8GB. Recommended for offline/batch use; not ideal for real-time on CPU."""
     if not DINO_GIANT_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -798,7 +656,6 @@ async def compare_dino_base(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """DINO V2 Base — 768-dim AI embedding, KNN similarity."""
     if not DINO_BASE_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -817,7 +674,6 @@ async def compare_clip(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """CLIP ViT-B/32 — 512-dim vision-language embedding, KNN similarity."""
     if not CLIP_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -836,7 +692,6 @@ async def compare_efficientnet(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """EfficientNet-B4 — 1792-dim CNN embedding, KNN similarity."""
     if not EFFICIENTNET_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -855,7 +710,6 @@ async def compare_convnext(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """ConvNeXt-Tiny — 768-dim CNN embedding, KNN similarity."""
     if not CONVNEXT_AVAILABLE:
         raise HTTPException(
             status_code=503,
@@ -874,7 +728,6 @@ async def compare_resnet(
     first: UploadFile = File(...),
     second: UploadFile = File(...),
 ):
-    """ResNet-50 — 2048-dim CNN embedding, KNN similarity. Baseline model."""
     if not RESNET_AVAILABLE:
         raise HTTPException(
             status_code=503,

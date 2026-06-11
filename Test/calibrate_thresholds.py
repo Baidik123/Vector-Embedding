@@ -1,41 +1,12 @@
 #!/usr/bin/env python3
-"""
-calibrate_thresholds.py  —  place in: Test/
-===========================================
-Runs every comparison algorithm on the labeled image-pair dataset and
-finds the optimal classification thresholds for each algorithm.
-
-Steps
------
-1. Load labeled pairs from CSV.
-2. Load images from the Testing Jambs folder.
-3. For each algorithm: compute similarity scores on all non-self pairs.
-4. Cache results to JSON (re-run without recomputing expensive models).
-5. Find optimal band thresholds by maximizing weighted accuracy.
-6. Print a report + ready-to-paste BANDS constants for main.py.
-
-Usage
------
-    cd "Test"
-    python calibrate_thresholds.py
-
-Edit the CONFIG section below to match your paths.
-"""
-
-# ─── CONFIG ──────────────────────────────────────────────────────────────────
 import os, sys
 
-# Folder containing the 24 PNG images (filenames like "7.png", "8.png", …)
 IMAGE_DIR = r"C:\Users\baidik.bora\Downloads\Testing Jambs"
 
-# Path to the ground-truth CSV
 CSV_PATH = os.path.join(os.path.dirname(__file__), "..", "all_image_to_image_similarity_estimates.csv")
 
-# Results cache — skips recomputing if the file already exists.
-# Delete it to force a full re-run.
 CACHE_PATH = os.path.join(os.path.dirname(__file__), "calibration_cache.json")
 
-# Which algorithms to run (comment out any you want to skip)
 ALGORITHMS = [
     "dhash",
     "dino_small",
@@ -49,16 +20,13 @@ ALGORITHMS = [
     "hybrid",
 ]
 
-# Hybrid weights — must match main.py
 DHASH_WEIGHT      = 0.4
 DINO_WEIGHT       = 0.3
 DINO_LARGE_WEIGHT = 0.3
 
-# dHash constants — must match main.py
 HASH_SIZE = 16
-MAX_BITS  = HASH_SIZE * HASH_SIZE   # 256
+MAX_BITS  = HASH_SIZE * HASH_SIZE
 
-# ─── IMPORTS ─────────────────────────────────────────────────────────────────
 import csv, json, time
 from pathlib import Path
 
@@ -79,7 +47,6 @@ except ImportError:
     HAS_TORCH = False
     print("[WARN] torch/transformers not installed — only dHash will run.")
 
-# ─── CATEGORY MAPPING ────────────────────────────────────────────────────────
 CATEGORY_MAP = {
     "100% similar":     "Exact Duplicate",
     "Very similar":     "Likely Duplicate",
@@ -96,8 +63,6 @@ CATEGORY_RANK = {
     "Different":             1,
 }
 
-# ─── PREPROCESSING (mirrors main.py) ─────────────────────────────────────────
-
 def preprocess_image(image: Image.Image) -> Image.Image:
     img_array = np.array(image)
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
@@ -111,15 +76,11 @@ def preprocess_image(image: Image.Image) -> Image.Image:
     blurred = cv2.GaussianBlur(masked, (3, 3), 0)
     return Image.fromarray(blurred)
 
-# ─── dHASH ───────────────────────────────────────────────────────────────────
-
 def dhash_score(img1: Image.Image, img2: Image.Image) -> dict:
     h1 = imagehash.dhash(preprocess_image(img1), hash_size=HASH_SIZE)
     h2 = imagehash.dhash(preprocess_image(img2), hash_size=HASH_SIZE)
     dist = h1 - h2
     return {"score": round(1.0 - dist / MAX_BITS, 6), "hamming": dist}
-
-# ─── KNN SIMILARITY HELPER ───────────────────────────────────────────────────
 
 def knn_similarity(emb1, emb2) -> float:
     e1 = F.normalize(emb1, p=2, dim=1).numpy()
@@ -132,8 +93,6 @@ def knn_similarity(emb1, emb2) -> float:
 def knn_to_cosine_scale(knn_sim: float) -> float:
     dist = (1.0 / knn_sim) - 1.0
     return float(1.0 - (dist ** 2) / 2.0)
-
-# ─── MODEL LOADERS ───────────────────────────────────────────────────────────
 
 _models = {}
 
@@ -174,8 +133,6 @@ def _cnn_preprocess(image: Image.Image):
     preprocessed = preprocess_image(image).convert("RGB")
     return get_cnn_transform()(preprocessed).unsqueeze(0)
 
-# ─── ALGORITHM RUNNERS ───────────────────────────────────────────────────────
-
 def run_dino_small(img1, img2) -> float:
     proc, model = _load_hf_model("dino_small", "facebook/dinov2-small")
     def embed(img):
@@ -195,7 +152,6 @@ def run_dino_large(img1, img2) -> float:
     return knn_to_cosine_scale(knn)
 
 def run_dino_giant(img1, img2) -> float:
-    # Uses CLS token (index 0), matching main.py's get_dino_giant_embedding()
     proc, model = _load_hf_model("dino_giant", "facebook/dinov2-giant")
     def embed(img):
         inp = proc(images=img, return_tensors="pt")
@@ -274,8 +230,6 @@ def run_resnet(img1, img2) -> float:
     knn = knn_similarity(embed(img1), embed(img2))
     return knn_to_cosine_scale(knn)
 
-# ─── IMAGE LOADING ───────────────────────────────────────────────────────────
-
 def load_images(image_dir: str) -> dict:
     images = {}
     img_dir = Path(image_dir)
@@ -287,8 +241,6 @@ def load_images(image_dir: str) -> dict:
             except Exception as e:
                 print(f"[WARN] Could not load {f}: {e}")
     return images
-
-# ─── LOAD CSV ────────────────────────────────────────────────────────────────
 
 def load_pairs(csv_path: str) -> list:
     pairs = []
@@ -311,8 +263,6 @@ def load_pairs(csv_path: str) -> list:
                 "gt_score": round(mid_pct / 100.0, 4),
             })
     return pairs
-
-# ─── COMPUTE SCORES ──────────────────────────────────────────────────────────
 
 def compute_all_scores(pairs: list, images: dict, algorithms: list) -> list:
     results = [dict(p) for p in pairs]
@@ -380,8 +330,6 @@ def compute_all_scores(pairs: list, images: dict, algorithms: list) -> list:
                 print(f"  {i+1}/{len(results)} pairs done", flush=True)
 
     return results
-
-# ─── THRESHOLD OPTIMISER ─────────────────────────────────────────────────────
 
 CATEGORY_WEIGHTS = {
     "Exact Duplicate":       5,
@@ -487,8 +435,6 @@ def dhash_find_optimal_thresholds(hammings: list, labels: list) -> dict:
         "per_class":          per_class,
     }
 
-# ─── REPORT ──────────────────────────────────────────────────────────────────
-
 BAND_DESCRIPTIONS = {
     "Exact Duplicate":       "These images are virtually identical.",
     "Likely Duplicate":      "Very similar with only minor differences.",
@@ -561,14 +507,11 @@ def save_report_json(algo_results: dict, output_path: str):
         json.dump(algo_results, f, indent=2)
     print(f"\n  Full results saved to: {output_path}")
 
-# ─── MAIN ────────────────────────────────────────────────────────────────────
-
 def main():
     print("=" * 70)
     print("  IMAGE SIMILARITY THRESHOLD CALIBRATION")
     print("=" * 70)
 
-    # 1. Load CSV
     print(f"\n[1/4] Loading labeled pairs from: {CSV_PATH}")
     csv_path = Path(CSV_PATH)
     if not csv_path.exists():
@@ -581,7 +524,6 @@ def main():
         pairs = load_pairs(str(csv_path))
     print(f"  {len(pairs)} labeled pairs loaded.")
 
-    # 2. Load images
     print(f"\n[2/4] Loading images from: {IMAGE_DIR}")
     images = load_images(IMAGE_DIR)
     if not images:
@@ -599,7 +541,6 @@ def main():
     valid_pairs = [p for p in pairs if p["img1"] in images and p["img2"] in images]
     print(f"  {len(valid_pairs)} / {len(pairs)} pairs can be evaluated.")
 
-    # 3. Compute scores (or load from cache)
     cache_path = Path(CACHE_PATH)
     if cache_path.exists():
         print(f"\n[3/4] Loading cached scores from: {cache_path}")
@@ -613,7 +554,6 @@ def main():
             json.dump(results, f)
         print(f"\n  Scores cached to: {cache_path}")
 
-    # 4. Optimise thresholds
     print(f"\n[4/4] Optimising thresholds ...")
     algo_results = {}
 

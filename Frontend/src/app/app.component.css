@@ -242,8 +242,6 @@
   }
 }
 
-/* ── Algorithm selection ────────────────────────────────────────────────── */
-
 .algorithm-section {
   margin-top: 20px;
   display: flex;
@@ -351,8 +349,6 @@
   text-overflow: ellipsis;
   min-width: 0;
 }
-
-/* ── Actions ─────────────────────────────────────────────────────────────── */
 
 .actions {
   display: flex;

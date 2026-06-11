@@ -20,9 +20,9 @@ interface AlgorithmStatus {
   band: string | null;
   bandDescription: string | null;
   hammingDistance?: number;
-  dhashSimilarity?: number;       // hybrid only
-  dinoSimilarity?: number;        // hybrid only
-  dinoLargeSimilarity?: number;   // hybrid only
+  dhashSimilarity?: number;
+  dinoSimilarity?: number;
+  dinoLargeSimilarity?: number;
 }
 
 const ALGORITHM_LABELS: Record<AlgorithmId, string> = {

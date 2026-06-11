@@ -89,16 +89,12 @@
   transform: scale(1.1);
 }
 
-/* ── Main content area ────────────────────────────────────────────────────── */
-
 .compare-content {
   display: flex;
   flex-direction: column;
   flex: 1;
   overflow: hidden;
 }
-
-/* ── Slider viewer ────────────────────────────────────────────────────────── */
 
 .pdf-viewer-scroll {
   flex: 1;
@@ -187,8 +183,6 @@
   border: none;
 }
 
-/* ── Results panel ────────────────────────────────────────────────────────── */
-
 .results-panel {
   padding: 16px 20px;
   border-top: 1px solid #ddd;
@@ -218,8 +212,6 @@
 .results-grid.multi {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
-
-/* ── Individual result card ───────────────────────────────────────────────── */
 
 .result-card {
   background: #fff;
@@ -323,8 +315,6 @@
   font-style: italic;
 }
 
-/* ── Per-card loading / error ─────────────────────────────────────────────── */
-
 .card-loading {
   display: flex;
   align-items: center;
@@ -340,8 +330,6 @@
   font-size: 0.85rem;
   font-weight: 500;
 }
-
-/* ── Spinner ──────────────────────────────────────────────────────────────── */
 
 .spinner-small {
   width: 18px;

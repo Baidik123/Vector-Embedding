@@ -31,7 +31,6 @@ export class AppComponent implements OnDestroy {
 
   selectedAlgorithms = signal<AlgorithmId[]>(['dhash']);
 
-  // Raw object URLs so they can be revoked and memory freed
   private firstObjectUrl: string | null = null;
   private secondObjectUrl: string | null = null;
 
@@ -139,7 +138,6 @@ export class AppComponent implements OnDestroy {
       return;
     }
 
-    // Revoke previous URL before creating a new one to prevent memory leaks
     this.revokeUrl(side);
     const objectUrl = URL.createObjectURL(file);
 
